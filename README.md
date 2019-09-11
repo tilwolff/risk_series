@@ -61,9 +61,10 @@ Table structure:
 </table>
 
 Example:
+<pre>
     YIELD_CURVE;1D;1W;1M;3M
     2019-09-03;0.01;0.015;0.016;0.017
     2019-09-04;0.011;0.015;0.017;0.018
     2019-09-05;0.012;0.016;0.016;0.018
-    
+</pre>
 When uploading new data on the endpoint /data/NAME, the NAME info in the first csv field may be left empty.
