@@ -31,18 +31,18 @@ Route::add('/def',function(){
         serve_time_series_definitions();
 });
 
-// Raw time series data, all series
-Route::add('/raw/{0,1}',function(){
+// time series data, all names, restricted by from, to and asof
+Route::add('/data',function(){
         include 'app/serve_time_series.php';
-        serve_time_series(false, null);
+        serve_time_series(null);
 });
 
-// Raw time series data, restrict to single name
-Route::add('/raw/([^/]{1,})',function($ts_name){
-        include 'app/serve_time_series.php';
-        serve_time_series(false, $ts_name);
-});
 
+// time series data, restrict to single name, from, to and asof, name 
+Route::add('/data/([^/]{1,})',function($name){
+        include 'app/serve_time_series.php';
+        serve_time_series($name);
+});
 
 
 //
