@@ -68,4 +68,3 @@ Example:
     2019-09-05;0.012;0.016;0.016;0.018
 </pre>
 When uploading new data on the endpoint /data/NAME, the NAME info in the first csv field may be left empty.
-
