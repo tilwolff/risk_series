@@ -39,9 +39,9 @@ Includes Apache .htaccess file that redirects all API calls to the main index.ph
 <tr><td>/def</td><td> GET</td><td> FORMAT (json|csv) where json is the default </td><td>Query all stored time series definitions as JSON or CSV filet</td></tr>
 <tr><td>/def/NAME</td><td> POST</td><td> none </td><td>Create or update time series definition</td></tr>
 <tr><td>/def/NAME</td><td> DELETE</td><td> none </td><td>Delete time series definition and data for name NAME</td></tr>
-<tr><td>/data</td><td> GET</td><td> FROM (YYYY-MM-DD), TO (YYYY-MM-DD), ASOF (YYYY-MM-DD HH:MM:SS.SSS while SSS, SS.SSS or HH:MM:SS.SSS are optional) </td><td>Query all time series data of all time series between FROM and TO, exclude data updated after ASOF</td></tr>
+<tr><td>/data</td><td> GET</td><td> FROM (YYYY-MM-DD), TO (YYYY-MM-DD), ASOF (YYYY-MM-DDTHH:MM:SS while SSS, THH:MM:SS.SSS is optional) </td><td>Query all time series data of all time series between FROM and TO, exclude data updated after ASOF</td></tr>
 <tr><td>/data</td><td> POST</td><td> none </td><td>Post new time series data in csv format</td></tr>
-<tr><td>/data/NAME</td><td> GET</td><td> FROM (YYYY-MM-DD), TO (YYYY-MM-DD), ASOF (YYYY-MM-DD HH:MM:SS.SSS while SSS, SS.SSS or HH:MM:SS.SSS are optional) </td><td>Query all time series data of time series NAME between FROM and TO, exclude data updated after ASOF</td></tr>
+<tr><td>/data/NAME</td><td> GET</td><td> FROM (YYYY-MM-DD), TO (YYYY-MM-DD), ASOF (YYYY-MM-DDTHH:MM:SS.SSS while THH:MM:SS.SSS is optional) </td><td>Query all time series data of time series NAME between FROM and TO, exclude data updated after ASOF</td></tr>
 <tr><td>/data/NAME</td><td> POST</td><td> none </td><td>Post new time series data in csv format</td></tr>
 </table>
 

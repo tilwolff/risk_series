@@ -34,17 +34,22 @@ function serve_time_series_definitions(){
         unset($db);
                 
 	if (!isset($_GET['FORMAT']) or $_GET['FORMAT'] == 'json' or $_GET['FORMAT'] == 'JSON') {
-		echo json_encode($ts_defs, JSON_PRETTY_PRINT);
-	} else {	
+		header('Content-Type: application/json');			
+		echo json_encode($ts_defs,JSON_PRETTY_PRINT);	
+	} else {
+		header('Content-Type: text/csv');	
 		echo array_to_csv($ts_defs);
-	}	
+	}
+
 }
 
 function serve_time_series($ts_name){
+
+	header('Content-Type: text/csv');
                 
-	/* parse $refined to extract from, to and asof dates. 
+	/* extract from, to and asof dates. 
 	   For dates from and to accepts both unix timestamp and YYYY-mm-dd date formats, 
-	   for asof accepts unix timestamp and YYYY-mm-dd HH:MM:SS.SSS formats, 
+	   for asof accepts unix timestamp and YYYY-mm-ddTHH:MM:SS.SSS formats, 
 	   with hours/minutes/seconds optional
 	*/ 
 			
@@ -52,9 +57,19 @@ function serve_time_series($ts_name){
 	$todate = null;
 	$asof= null;
 
+	//read GET params
+
 	if(isset($_GET['FROM'])) $fromdate=$_GET['FROM'];
 	if(isset($_GET['TO'])) $todate=$_GET['TO'];
 	if(isset($_GET['ASOF'])) $asof=$_GET['ASOF'];
+	if($ts_name==null && isset($_GET['NAME'])) $ts_name=$_GET['NAME'];
+
+	//also accept lowercase for convenience
+
+	if(isset($_GET['from'])) $fromdate=$_GET['from'];
+	if(isset($_GET['to'])) $todate=$_GET['to'];
+	if(isset($_GET['asof'])) $asof=$_GET['asof'];
+	if($ts_name==null && isset($_GET['name'])) $ts_name=$_GET['name'];
 
 	if ($fromdate!= null){
 		$fromdate=(strlen((int)$fromdate) == strlen($fromdate))? 
@@ -66,20 +81,17 @@ function serve_time_series($ts_name){
 	}
 
 	if ($asof != null){
-		if (strlen((int)$asof) != strlen($asof)) {
-			$asof = str_replace("+", " ",$asof);
-			$asof = new DateTime($asof, new DateTimeZone('Europe/Rome'));
-			$asof = $asof->getTimestamp();
-		}				
+		$asof=(strlen((int)$asof) == strlen($asof))? 
+				$asof: strtotime($asof);
 	}
 
-       
+     
 	//open database and get relevant time series data   
 	     
         $db=new SQLite3("./db/data.sqlite", SQLITE3_OPEN_READONLY);
         
         $sql="SELECT name, tag, dt, updated, value from ts_data inner join ts_def on ts_data.ts_id=ts_def.ts_id";
-        if($ts_name != null || ($fromdate != null && $todate != null) || $asof != null ) {
+        if($ts_name != null || $fromdate != null || $todate != null || $asof != null ) {
 			$sql .= " WHERE ";
 		}
         if(null!=$ts_name){
@@ -87,12 +99,16 @@ function serve_time_series($ts_name){
         } 
                            
 	// modification of sql query to allow for selection of dates and asof:
-        if ($fromdate != null && $todate != null){
+        if ($fromdate != null){
 			null!=$ts_name ? $sql .= " AND " : $sql .= "";
-			$sql .= " (dt BETWEEN '".$fromdate."' AND '".$todate."')";
-	}
+			$sql .= " dt >= '".$fromdate."'";
+		}
+		if ($todate != null){
+			(null!=$ts_name || null!=$fromdate) ? $sql .= " AND " : $sql .= "";
+			$sql .= " dt <='".$todate."'";
+		}
         if ($asof != null) {
-			(null!=$ts_name|| (null!= $fromdate && null!= $todate)) ? $sql .= " AND " : $sql .= "";
+			(null!=$ts_name|| null!= $fromdate || null!= $todate) ? $sql .= " AND " : $sql .= "";
 			$sql .= " (updated <= '".$asof."')" ;
 	} 
 	$sql .= " ORDER BY name asc, dt asc, tag asc, updated desc";   
@@ -107,9 +123,6 @@ function serve_time_series($ts_name){
 	$tags = get_tags($db);  // get tags via sql
 			
 	unset($db);  // at the end close the connection to the database
-	/* I prefere to close the db connection with unset($db) because by setting $db=null 
-	the variable $db, although null, remains there to occupy  memory space 
-	till the whole function is closed */
 	
 	// PIVOTISE RESULTS AND OUTPUT AS CSV       
 
@@ -130,19 +143,19 @@ function pivot($input,$tags) {
 		$tags_values_array=array(); // initiate a tags-values array 
 		
 		foreach($input as $row) {			
-			if ($row['name'] != $name) { // by new name				
+			if ($row['name'] != $name) { // at new name				
 				$name = $row['name'];
-				$kopf = $name ;
+				$head = $name ;
 				foreach ($tags as $tag) {
-					$kopf .= ';'.$tag ;
+					$head .= ';'.$tag ;
 				}
 				
-				$output .= $kopf."\n";  // add to output a line containing the name and the list of tags
+				$output .= $head."\n";  // add to output a line containing the name and the list of tags
 				
 				$tags_values_array=array(); // re-initiate the tags-values array
 				$date_string = ''; // reset date_string by new name
 				$date = null; // reset date by new name
-			} else if ($date != $row['dt']) {  // by new date				
+			} else if ($date != $row['dt']) {  // at new date				
 				if ($date != null) { // if a previous date has already been worked out
 					// prepare a corresponding string to be added to output
 					foreach ($tags as $def_tag) {
@@ -158,8 +171,8 @@ function pivot($input,$tags) {
 				
 				// (re)initialise fields for new date				
 				$date = $row['dt'];  
-				$date_string = date('Y-m-d',$date).';';  // by new date initiate a new date_string 
-				$tags_values_array=array(); // by new date re-initiate the tags-values array 
+				$date_string = date('Y-m-d',$date).';';  // at new date initiate a new date_string 
+				$tags_values_array=array(); // at new date re-initiate the tags-values array 
 			}
 									
 				 
@@ -179,8 +192,8 @@ function pivot($input,$tags) {
 }
 
 function get_tags ($db) {		
-		$tags_defs=array();
-		$sql="SELECT tag FROM ts_def where not tag = 'tag'";       
+	$tags_defs=array();
+	$sql="SELECT tag FROM ts_def where not tag = 'tag'";       
         $sql .= " ORDER BY tag asc;";
         $results = $db->query($sql);
 		
@@ -188,7 +201,7 @@ function get_tags ($db) {
                 array_push($tags_defs, $row['tag']);
         }
         $db = null;
-        usort($tags_defs,'tag_compare');  // check if required
+        usort($tags_defs,'tag_compare'); 
         return $tags_defs;
 }
 
@@ -209,13 +222,13 @@ function array_to_csv($input) {
 		foreach($input[0] as $key => $key_value) {
 			$keystring .= $key.";";
 		}
-		$output = substr($keystring,0,-1)."\r\n";
+		$output = substr($keystring,0,-1)."\n";
 		foreach($input as $row) {
 			$valuestring='';	
 			foreach($row as $key => $key_value){
 				$valuestring .= $key_value.";";
 			}
-			$output .= substr($valuestring,0,-1)."\r\n";
+			$output .= substr($valuestring,0,-1)."\n";
 		}	
 		return $output;							
 }

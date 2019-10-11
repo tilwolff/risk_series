@@ -12,14 +12,12 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 
 // Include router class
-include('app/Route.php');
+include('./app/route.php');
 
 // Add base route (startpage)
 Route::add('/',function(){
-  echo 'API SPEC <br/>';
+  include('./app/gui.html');
 });
-
-
 
 //
 // Routes for reading data
@@ -76,6 +74,7 @@ Route::methodNotAllowed(function($path, $method){
 });
 
 // Run the Router with the given Basepath
-Route::run('/');
+$basepath=pathinfo($_SERVER['SCRIPT_NAME'])['dirname'];
+Route::run($basepath);
 
 ?>

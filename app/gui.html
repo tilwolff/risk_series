@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html>
+<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+<meta charset="utf-8"/>
+
+<!--
+bootstrap
+-->
+<link rel="stylesheet" href="assets/bootstrap.min.css">
+
+<!--
+main document
+-->
+<body>
+
+<nav class="navbar navbar-light bg-light">
+  <a class="navbar-brand" href="#">
+    risk_series
+  </a>
+</nav>
+
+<br/>
+<div class="container font-weight-light">
+<div class="row">
+<div class="col-6">
+<div class="card m-1 bg-light">
+        <div class="card-body">
+                <form method="get" action="data" target="_blank">
+                        <h4 class="card-title">Download time series</h4>
+                        
+                        <div class="form-group form-group-sm">
+                                <label for="fullname">Name</label>
+                                <input class="form-control" name="NAME" type="text" value="" placeholder="Name">
+
+                                <label for="fullname">From</label>
+                                <input class="form-control" name="FROM" type="text" value="" placeholder="YYYY-MM-DD">
+
+                                <label for="fullname">To</label>
+                                <input class="form-control" name="TO" type="text" value="" placeholder="YYYY-MM-DD">
+
+                                <label for="fullname">Asof</label>
+                                <input class="form-control" name="ASOF" type="text" value="" placeholder="YYYY-MM-DDTHH:MM:SS">
+                        </div>
+                        
+                        
+                        <button type="submit" class="btn btn-secondary">Download</button>
+                </form>
+        </div>
+</div>
+</div>
+<div class="col-6">
+<div class="card m-1 bg-light">
+        <div class="card-body">
+                <form method="post" action="data" target="_blank">
+                        <h4 class="card-title">Upload time series</h4>
+                        
+                        <div class="form-group form-group-sm">
+                                <label for="fullname">Name</label>
+                                <input class="form-control" name="fullname" type="text" value="" placeholder="Name">
+                                <label for="fullname">File</label>
+                                <input class="form-control-file" type="file">
+                        </div>
+                        
+                        <button type="submit" class="btn btn-secondary">Upload</button>
+                </form>
+        </div>
+</div>
+</div>
+
+</div>
+</div>
+
+</body>
+</html>
+

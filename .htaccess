@@ -7,9 +7,10 @@ RewriteEngine on
 # Edit this in your init method too if you script lives in a subfolder
 RewriteBase /
 
-# Deliver the folder or file directly if it exists on the server
+# deliver the file directly if is a file in the asset folder
 RewriteCond %{REQUEST_FILENAME} !-f
-RewriteCond %{REQUEST_FILENAME} !-d
+RewriteCond %{REQUEST_FILENAME} ^assets\/.*
+
  
 # Push every request to app.php
 RewriteRule ^(.*)$ index.php [QSA]
