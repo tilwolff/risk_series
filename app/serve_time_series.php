@@ -122,7 +122,6 @@ function serve_time_series($ts_name){
 			$sql .= " updated <".$asof."'" ;
 	} 
 	$sql .= " ORDER BY name asc, dt asc, tag asc, updated desc";
-	echo $sql;
 
         $results = $db->query($sql);
                
