@@ -51,14 +51,31 @@ main document
 <div class="col-6">
 <div class="card m-1 bg-light">
         <div class="card-body">
-                <form method="post" action="data" target="_blank">
+                <form method="post" action="def" target="_blank" enctype="multipart/form-data">
+                        <h4 class="card-title">Upload time series definitions</h4>
+                        
+                        <div class="form-group form-group-sm">
+                                <label for="fullname">Name</label>
+                                <input class="form-control" name="fullname" type="text" value="" placeholder="Name">
+                                <label for="fullname">File</label>
+                                <input class="form-control-file" type="file" name="file">
+                        </div>
+                        
+                        <button type="submit" class="btn btn-secondary">Upload</button>
+                </form>
+        </div>
+</div>
+
+<div class="card m-1 bg-light">
+        <div class="card-body">
+                <form method="post" action="data" target="_blank" enctype="multipart/form-data">
                         <h4 class="card-title">Upload time series</h4>
                         
                         <div class="form-group form-group-sm">
                                 <label for="fullname">Name</label>
                                 <input class="form-control" name="fullname" type="text" value="" placeholder="Name">
                                 <label for="fullname">File</label>
-                                <input class="form-control-file" type="file">
+                                <input class="form-control-file" type="file" name="file">
                         </div>
                         
                         <button type="submit" class="btn btn-secondary">Upload</button>

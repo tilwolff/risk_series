@@ -48,12 +48,27 @@ Route::add('/data/([^/]{1,})',function($name){
 
 // Time series definitions
 Route::add('/def',function(){
-        //TO BE IMPLEMENTED: POST NEW TIME SERIES DEFINITION
+        include 'app/update_time_series.php';
+        update_time_series_definitions(null);
+}, 'post');
+
+// Time series definitions ,restrict to name
+Route::add('/def/([^/]{1,})',function($ts_name){
+        include 'app/update_time_series.php';
+        update_time_series_definitions($ts_name);
+}, 'post');
+
+
+// Update time series for single name with csv 
+Route::add('/data',function(){
+        include 'app/update_time_series.php';
+        update_time_series(null);
 }, 'post');
 
 // Update time series for single name with csv 
-Route::add('/update/([^/]{1,})',function($ts_name){
- 	//TO BE IMPLEMENTED: POST NEW CSV DATA
+Route::add('/data/([^/]{1,})',function($ts_name){
+        include 'app/update_time_series.php';
+        update_time_series($ts_name);
 }, 'post');
 
 //

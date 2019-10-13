@@ -76,13 +76,23 @@ function serve_time_series($ts_name){
 				$fromdate: strtotime($fromdate);
 	}
 	if ($todate!= null){
-		$todate=(strlen((int)$todate) == strlen($todate))? 
-				$todate: strtotime($todate);
+		$todate = (strlen((int)$todate) == strlen($todate))? 
+				"= '".$todate : " '".strtotime($todate.'+1 day');
+				/* if todate is timestamp, prepare a sql query that includes the date,
+				if it is string, transform to timestamp to time 00:00:00 of the following day,
+				and prepare the sql query up to, but excluding, this time*/ 		 
 	}
 
 	if ($asof != null){
-		$asof=(strlen((int)$asof) == strlen($asof))? 
-				$asof: strtotime($asof);
+		if (strlen((int)$asof) != strlen($asof)) {
+			if (strpos($asof,"T")) {
+				$asof = "= '".strtotime($asof);
+			} else {
+				$asof = " '".strtotime($asof.'+1 day');
+			}
+		} else {
+			$asof = "= '".$asof;
+		}				
 	}
 
      
@@ -100,18 +110,19 @@ function serve_time_series($ts_name){
                            
 	// modification of sql query to allow for selection of dates and asof:
         if ($fromdate != null){
-			null!=$ts_name ? $sql .= " AND " : $sql .= "";
-			$sql .= " dt >= '".$fromdate."'";
-		}
-		if ($todate != null){
-			(null!=$ts_name || null!=$fromdate) ? $sql .= " AND " : $sql .= "";
-			$sql .= " dt <='".$todate."'";
-		}
+		if (null!=$ts_name) $sql .= " AND ";
+		$sql .= " dt >= '".$fromdate."'";
+	}
+	if ($todate != null){
+		if (null!=$ts_name || null!=$fromdate) $sql .= " AND ";
+		$sql .= " dt <".$todate."'";
+	}
         if ($asof != null) {
-			(null!=$ts_name|| null!= $fromdate || null!= $todate) ? $sql .= " AND " : $sql .= "";
-			$sql .= " (updated <= '".$asof."')" ;
+		if (null!=$ts_name|| null!= $fromdate || null!= $todate) $sql .= " AND ";
+			$sql .= " updated <".$asof."'" ;
 	} 
-	$sql .= " ORDER BY name asc, dt asc, tag asc, updated desc";   
+	$sql .= " ORDER BY name asc, dt asc, tag asc, updated desc";
+	echo $sql;
 
         $results = $db->query($sql);
                
