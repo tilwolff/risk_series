@@ -37,14 +37,21 @@ function update_time_series_definitions($ts_name){
 		$lines=file($upfile['tmp_name']);
 	}else{
 		//throw error end exit
-		echo '{"success": false}';
+		echo '{"success": false, "error_message": "no file uploaded"}';
 		exit();
 	}
 
 	$header=array_shift($lines);
 	$header=explode(";",trim($header));
 
-	//todo: validate header, must contain all valid fields
+	if( $header[0]!="name"
+	||$header[1]!="tag"
+	||$header[2]!="default_risk_type"
+	||$header[3]!="log_shift"
+	||$header[4]!="csv_alias" ){
+		echo '{"success": false, "error_message": "Error: invalid csv file"}';
+		exit();
+	}
 
 	$sql="INSERT OR IGNORE INTO ts_def(name, tag) VALUES(?,?)";
 	$prepared=$db->prepare($sql);
@@ -71,6 +78,9 @@ function update_time_series_definitions($ts_name){
 	$prepared->bindParam(4, $name);
 	$prepared->bindParam(5, $tag);
 
+	$success=0;
+	$failure=0;
+
 	foreach($lines as $line) {
 		$line=explode(";",trim($line));
 		$name=$line[0];
@@ -78,14 +88,18 @@ function update_time_series_definitions($ts_name){
 		$default_risk_type=(""==$line[2]) ? null : $line[2];
 		$log_shift=floatval($line[3]);
 		$csv_alias=$line[4];
-		$prepared->execute();
+		if($prepared->execute()){
+			$success++;
+		}else{
+			$failure++;
+		}
 	}
 
 
 	$db->exec('COMMIT;');
 	unset($db);
 
-	echo '{"success": true}';
+	echo '{"success": ' . (($success>0)? 'true' : 'false') . ', "num_success": ' . $success . ', "num_failure": ' . $failure . '}';
 
 }
 
@@ -114,7 +128,7 @@ function update_time_series($ts_name){
 		$lines=file($upfile['tmp_name']);
 	}else{
 		//throw error and exit
-		echo '{"success": false, "reason": "no file uploaded"}';
+		echo '{"success": false, "error_message": "Error: no file uploaded"}';
 		exit();
 	}
 
@@ -152,10 +166,15 @@ function update_time_series($ts_name){
 
 	foreach($lines as $line) {
 		$line=explode(";",trim($line));
-		if(sizeof($line)!=sizeof($header)) continue;
+		if(sizeof($line)!=sizeof($header)){  //ensure csv structure is valid
+			$failure++;
+			continue;
+		}
 		$dt=$line[0];
-		if (strtotime($dt)==false) continue; //ensure date string is valid
-		
+		if (strtotime($dt)==false){ //ensure date string is valid
+			$failure++;
+			continue;
+		}
 		
 		for($i=1; $i<sizeof($header); $i++){ //handle all tags
 		        $value=retrieve_number($line[$i]);

@@ -1,6 +1,7 @@
 <?PHP
 
 /*
+
 Copyright (c) 2018 Dr. Tilman Wolff-Siemssen
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
@@ -8,6 +9,7 @@ Permission is hereby granted, free of charge, to any person obtaining a copy of 
 The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
 
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
 */
 
 function get_time_series_definitions($db, $ts_name){
@@ -33,23 +35,19 @@ function serve_time_series_definitions(){
         $ts_defs=get_time_series_definitions($db, $ts_name);
         unset($db);
                 
-	if (!isset($_GET['FORMAT']) or $_GET['FORMAT'] == 'json' or $_GET['FORMAT'] == 'JSON') {
-		header('Content-Type: application/json');			
+	if (!isset($_GET['FORMAT']) or $_GET['FORMAT'] == 'json' or $_GET['FORMAT'] == 'JSON') {			
 		echo json_encode($ts_defs,JSON_PRETTY_PRINT);	
-	} else {
-		header('Content-Type: text/csv');	
+	} else {	
 		echo array_to_csv($ts_defs);
 	}
 
 }
 
 function serve_time_series($ts_name){
-
-	header('Content-Type: text/csv');
                 
-	/* extract from, to and asof dates. 
+	/* parse $refined to extract from, to and asof dates. 
 	   For dates from and to accepts both unix timestamp and YYYY-mm-dd date formats, 
-	   for asof accepts unix timestamp and YYYY-mm-ddTHH:MM:SS.SSS formats, 
+	   for asof accepts unix timestamp and YYYY-mm-dd HH:MM:SS.SSS formats, 
 	   with hours/minutes/seconds optional
 	*/ 
 			
@@ -62,13 +60,13 @@ function serve_time_series($ts_name){
 	if(isset($_GET['FROM'])) $fromdate=$_GET['FROM'];
 	if(isset($_GET['TO'])) $todate=$_GET['TO'];
 	if(isset($_GET['ASOF'])) $asof=$_GET['ASOF'];
-	if($ts_name==null && isset($_GET['NAME'])) $ts_name=$_GET['NAME'];
 
 	//also accept lowercase for convenience
 
 	if(isset($_GET['from'])) $fromdate=$_GET['from'];
 	if(isset($_GET['to'])) $todate=$_GET['to'];
 	if(isset($_GET['asof'])) $asof=$_GET['asof'];
+
 	if($ts_name==null && isset($_GET['name'])) $ts_name=$_GET['name'];
 
 	if ($fromdate!= null){
@@ -94,7 +92,6 @@ function serve_time_series($ts_name){
 			$asof = "= '".$asof;
 		}				
 	}
-
      
 	//open database and get relevant time series data   
 	     
@@ -110,18 +107,18 @@ function serve_time_series($ts_name){
                            
 	// modification of sql query to allow for selection of dates and asof:
         if ($fromdate != null){
-		if (null!=$ts_name) $sql .= " AND ";
+		null!=$ts_name ? $sql .= " AND " : $sql .= "";
 		$sql .= " dt >= '".$fromdate."'";
 	}
 	if ($todate != null){
-		if (null!=$ts_name || null!=$fromdate) $sql .= " AND ";
+		(null!=$ts_name || null!=$fromdate) ? $sql .= " AND " : $sql .= "";
 		$sql .= " dt <".$todate."'";
 	}
         if ($asof != null) {
-		if (null!=$ts_name|| null!= $fromdate || null!= $todate) $sql .= " AND ";
-			$sql .= " updated <".$asof."'" ;
+			(null!=$ts_name|| null!= $fromdate || null!= $todate) ? $sql .= " AND " : $sql .= "";
+			$sql .= " (updated <".$asof."')" ;
 	} 
-	$sql .= " ORDER BY name asc, dt asc, tag asc, updated desc";
+	$sql .= " ORDER BY name asc, dt asc, tag asc, updated desc";   
 
         $results = $db->query($sql);
                
@@ -133,8 +130,11 @@ function serve_time_series($ts_name){
 	$tags = get_tags($db);  // get tags via sql
 			
 	unset($db);  // at the end close the connection to the database
+	/* It is prefereable to close the db connection with unset($db) because by setting $db=null 
+	the variable $db, although null, remains there to occupy  memory space 
+	till the whole function is closed */
 	
-	// PIVOTISE RESULTS AND OUTPUT AS CSV       
+	// PIVOTISE RESULTS AND OUTPUT AS CSV      
 
 	$pivot = pivot($ts_defs_refined,$tags);		
 	// print output
@@ -152,7 +152,8 @@ function pivot($input,$tags) {
 		$date_string = '';	
 		$tags_values_array=array(); // initiate a tags-values array 
 		
-		foreach($input as $row) {			
+		foreach($input as $row) {	
+				
 			if ($row['name'] != $name) { // at new name				
 				$name = $row['name'];
 				$head = $name ;
@@ -163,29 +164,23 @@ function pivot($input,$tags) {
 				$output .= $head."\n";  // add to output a line containing the name and the list of tags
 				
 				$tags_values_array=array(); // re-initiate the tags-values array
-				$date_string = ''; // reset date_string by new name
-				$date = null; // reset date by new name
-			} else if ($date != $row['dt']) {  // at new date				
+				$date = $row['dt']; 				
+				$date_string = date('Y-m-d',$date).';';  // at new name is also new date: initiate a new date_string 
+			
+			} else if ($date != $row['dt']) {  // at new date	
+							
 				if ($date != null) { // if a previous date has already been worked out
-					// prepare a corresponding string to be added to output
-					foreach ($tags as $def_tag) {
-						foreach ($tags_values_array as $tag =>$tag_value){
-							$tag == $def_tag ? $date_string .= $tag_value : $date_string .= '';								
-						}
-						$date_string .= ';'; /* at the end of the loop, 
-											no matter whether a value for this tag has been found or not, 
-											create a csv entry*/
-					}									
-					$output .= $date_string ."\n";// add to output a line with previous date and corresponding tag values				
+					// prepare a corresponding string to be added to output					
+					$date_string .= tags_values_string($tags,$tags_values_array);													
+					$output .= substr($date_string,0,-1) ."\n";// add to output a line with previous date and corresponding tag values				
 				}
 				
 				// (re)initialise fields for new date				
 				$date = $row['dt'];  
-				$date_string = date('Y-m-d',$date).';';  // at new date initiate a new date_string 
+				$date_string = date('Y-m-d',$date).';';  // at new date initiate a new date_string 				
 				$tags_values_array=array(); // at new date re-initiate the tags-values array 
 			}
-									
-				 
+							 
 			// look for all entries corresponding to the same date
 			foreach ($tags as $tag) {
 				if ($row['tag'] == $tag) {
@@ -196,8 +191,13 @@ function pivot($input,$tags) {
 						$tags_values_array = array_merge($tags_values_array,array($tag => $row['value']));									
 					}	
 				} 
-			}			
-		}			
+			}		
+		}	
+		
+		// at the very end, prepare a string corresponding to last date worked out, to be added to output		
+		$date_string .= tags_values_string($tags,$tags_values_array);										
+		$output .= substr($date_string,0,-1) ."\n";// add to output a line with previous date and corresponding tag values				
+				
 		return $output;		
 }
 
@@ -210,7 +210,7 @@ function get_tags ($db) {
         while ($row = $results->fetchArray(SQLITE3_ASSOC)) { 
                 array_push($tags_defs, $row['tag']);
         }
-        $db = null;
+        unset($db);
         usort($tags_defs,'tag_compare'); 
         return $tags_defs;
 }
@@ -224,6 +224,20 @@ function tag_compare ($x,$y) {
 		} 
 		else if (substr($x,-1) == 'M' && substr($y,-1) == 'Y') return -1;
 		else if (substr($x,-1) == 'Y' && substr($y,-1) == 'M') return 1;
+}
+
+// loops over all tag names to get their value (for a given date) and returns a csv string
+function tags_values_string($tags,$tags_values_array) {
+		$string = '';
+		foreach ($tags as $def_tag) {
+			foreach ($tags_values_array as $tag =>$tag_value){
+				$tag == $def_tag ? $string .= $tag_value : $string .= '';								
+			}
+			$string .= ';'; /* at the end of the loop, 
+								no matter whether a value for this tag has been found or not, 
+								create a csv entry*/
+		}
+		return $string;	
 }
 
 // simple array to csv conversion, without pivoting, useful for outputting  /def as csv:
