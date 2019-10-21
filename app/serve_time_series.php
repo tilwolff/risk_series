@@ -76,6 +76,7 @@ function serve_time_series($ts_name){
 	if(isset($_GET['asof'])) $asof=$_GET['asof'];
 
 	if($ts_name==null && isset($_GET['name'])) $ts_name=$_GET['name'];
+	if($ts_name==null && isset($_GET['NAME'])) $ts_name=$_GET['NAME'];
 
 	if ($fromdate!= null){
 		$fromdate=(strlen((int)$fromdate) == strlen($fromdate))? 
