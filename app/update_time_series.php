@@ -23,15 +23,16 @@ function update_time_series_definitions($ts_name){
 		ts_id INTEGER NOT NULL PRIMARY KEY,
 		name TEXT NOT NULL,
 		tag TEXT,
-		default_risk_type TEXT,
-		log_shift REAL,
-		csv_alias TEXT,
+		meta TEXT,
 		CONSTRAINT unique_series_def UNIQUE (name, tag))";
 
 	$db->exec($sql);
 
 	//get uploaded content
-	$upfile=isset($_FILES['file']) ? $_FILES['file'] : null;
+	$upfile=null;
+	if (isset($_FILES['file'])) $upfile=$_FILES['file'];
+	if (isset($_FILES['FILE'])) $upfile=$_FILES['FILE'];
+
 	if($upfile && $upfile['size']){
 		//file has positive size, get its contents as array
 		$lines=file($upfile['tmp_name']);
@@ -44,50 +45,31 @@ function update_time_series_definitions($ts_name){
 	$header=array_shift($lines);
 	$header=explode(";",trim($header));
 
-	if( $header[0]!="name"
-	||$header[1]!="tag"
-	||$header[2]!="default_risk_type"
-	||$header[3]!="log_shift"
-	||$header[4]!="csv_alias" ){
+	if( $header[0]!="name" ||$header[1]!="tag" ||$header[2]!="meta"){
 		echo '{"success": false, "error_message": "Error: invalid csv file"}';
 		exit();
 	}
 
-	$sql="INSERT OR IGNORE INTO ts_def(name, tag) VALUES(?,?)";
+	$sql="REPLACE INTO ts_def(name, tag, meta) VALUES(:name,:tag,:meta)";
 	$prepared=$db->prepare($sql);
-	$prepared->bindParam(1, $name);
-	$prepared->bindParam(2, $tag);
+	$prepared->bindParam(':name', $name);
+	$prepared->bindParam(':tag', $tag);
+	$prepared->bindParam(':meta', $meta);
 
-	foreach($lines as $line) {
-		$line=explode(";",trim($line));
-		$name=$line[0];
-		$tag=(""==$line[1]) ? null : $line[1];
-		$prepared->execute();
-	}
-
-	$sql="UPDATE ts_def
-		SET default_risk_type=?, 
-		log_shift=?, 
-		csv_alias=?
-		WHERE 
-		name=? and tag=?";
-	$prepared=$db->prepare($sql);
-	$prepared->bindParam(1, $default_risk_type);
-	$prepared->bindParam(2, $log_shift);
-	$prepared->bindParam(3, $csv_alias);
-	$prepared->bindParam(4, $name);
-	$prepared->bindParam(5, $tag);
 
 	$success=0;
 	$failure=0;
 
 	foreach($lines as $line) {
 		$line=explode(";",trim($line));
+		if(sizeof($line)!=sizeof($header)){  //ensure csv structure is valid
+			$failure++;
+			continue;
+		}
 		$name=$line[0];
 		$tag=(""==$line[1]) ? null : $line[1];
-		$default_risk_type=(""==$line[2]) ? null : $line[2];
-		$log_shift=floatval($line[3]);
-		$csv_alias=$line[4];
+		$meta=(""==$line[2]) ? null : $line[2];
+		$prepared->execute();
 		if($prepared->execute()){
 			$success++;
 		}else{
@@ -95,12 +77,9 @@ function update_time_series_definitions($ts_name){
 		}
 	}
 
-
 	$db->exec('COMMIT;');
 	unset($db);
-
 	echo '{"success": ' . (($success>0)? 'true' : 'false') . ', "num_success": ' . $success . ', "num_failure": ' . $failure . '}';
-
 }
 
 function update_time_series($ts_name){
@@ -122,7 +101,10 @@ function update_time_series($ts_name){
 	$db->exec($sql);
 
 	//get uploaded content
-	$upfile=isset($_FILES['file']) ? $_FILES['file'] : null;
+	$upfile=null;
+	if (isset($_FILES['file'])) $upfile=$_FILES['file'];
+	if (isset($_FILES['FILE'])) $upfile=$_FILES['FILE'];
+
 	if($upfile && $upfile['size']){
 		//file has positive size, get its contents as array
 		$lines=file($upfile['tmp_name']);
@@ -146,6 +128,7 @@ function update_time_series($ts_name){
 	
 	//update only the requsted name if given in url path or GET parameter
 	if($ts_name==null && isset($_GET['name'])) $ts_name=$_GET['name'];
+	if($ts_name==null && isset($_GET['NAME'])) $ts_name=$_GET['NAME'];
 	//otherwise, retrieve name from first field in uploaded file header
 	if($ts_name==null) $ts_name=$header[0];
 
@@ -157,12 +140,12 @@ function update_time_series($ts_name){
 	$success=0;
 	$failure=0;
 
-	$sql="INSERT INTO ts_data(ts_id, dt, value) VALUES((select ts_id from ts_def where name=? and tag=?),strftime('%s',?),?)";
+	$sql="INSERT INTO ts_data(ts_id, dt, value) VALUES((select ts_id from ts_def where name=:name and tag=:tag),strftime('%s',:dt),:value)";
 	$prepared=$db->prepare($sql);
-	$prepared->bindParam(1, $ts_name);
-	$prepared->bindParam(2, $tag);
-	$prepared->bindParam(3, $dt);
-	$prepared->bindParam(4, $value);
+	$prepared->bindParam(':name', $ts_name);
+	$prepared->bindParam(':tag', $tag);
+	$prepared->bindParam(':dt', $dt);
+	$prepared->bindParam(':value', $value);
 
 	foreach($lines as $line) {
 		$line=explode(";",trim($line));

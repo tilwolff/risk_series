@@ -37,18 +37,19 @@ Includes Apache .htaccess file that redirects all API calls to the main index.ph
 <tr><th>Endpoint</th><th> HTTP Method</th><th> Parameters </th><th>Description</th></tr>
 <tr><td>/</td><td> GET</td><td> none </td><td>returns app version number and creates database file under /data/data.sqlite if it does not exist.</td></tr>
 <tr><td>/def</td><td> GET</td><td> FORMAT (json|csv) where json is the default </td><td>Query all stored time series definitions as JSON or CSV filet</td></tr>
-<tr><td>/def/NAME</td><td> POST</td><td> none </td><td>Create or update time series definition</td></tr>
+<tr><td>/def/NAME</td><td> POST</td><td> FILE as multipart/form-data encoded attribute </td><td>Create or update time series definition with file</td></tr>
 <tr><td>/def/NAME</td><td> DELETE</td><td> none </td><td>Delete time series definition and data for name NAME</td></tr>
-<tr><td>/data</td><td> GET</td><td> FROM (YYYY-MM-DD), TO (YYYY-MM-DD), ASOF (YYYY-MM-DDTHH:MM:SS while SSS, THH:MM:SS.SSS is optional) </td><td>Query all time series data of all time series between FROM and TO, exclude data updated after ASOF</td></tr>
-<tr><td>/data</td><td> POST</td><td> none </td><td>Post new time series data in csv format</td></tr>
+<tr><td>/dates</td><td> GET</td><td> FROM (YYYY-MM-DD), TO (YYYY-MM-DD), ASOF (YYYY-MM-DDTHH:MM:SS while THH:MM:SS is optional) </td><td>Query all dates where data is available</td></tr>
+<tr><td>/data</td><td> GET</td><td> FROM (YYYY-MM-DD), TO (YYYY-MM-DD), ASOF (YYYY-MM-DDTHH:MM:SS while THH:MM:SS is optional) </td><td>Query all time series data of all time series between FROM and TO, exclude data updated after ASOF</td></tr>
+<tr><td>/data</td><td> POST</td><td> FILE as multipart/form-data encoded attribute </td><td>Post new time series data in csv format file</td></tr>
 <tr><td>/data/NAME</td><td> GET</td><td> FROM (YYYY-MM-DD), TO (YYYY-MM-DD), ASOF (YYYY-MM-DDTHH:MM:SS.SSS while THH:MM:SS.SSS is optional) </td><td>Query all time series data of time series NAME between FROM and TO, exclude data updated after ASOF</td></tr>
-<tr><td>/data/NAME</td><td> POST</td><td> none </td><td>Post new time series data in csv format</td></tr>
+<tr><td>/data/NAME</td><td> POST</td><td> FILE as multipart/form-data encoded attribute </td><td>Post new time series data in csv format</td></tr>
 </table>
 
 ### Format specification
 Time series data is uploaded via POST requests and downloaded via GET requests in a tabular csv format as specified below.
  - Record separator: `;`
- - Line separator: `\n` (i.e., Linux line ending)
+ - Line separator: `\r\n` (i.e., Windows line ending)
  - Date format: YYYY-MM-DD
  - Decimal separator: `.` (dot)
  
@@ -67,4 +68,4 @@ Example:
     2019-09-04;0.011;0.015;0.017;0.018
     2019-09-05;0.012;0.016;0.016;0.018
 </pre>
-When uploading new data on the endpoint /data/NAME, the NAME info in the first csv field may be left empty.
+When uploading new data on the endpoint /data/NAME, the NAME info in the first csv field is overrided and, consequently, may be left empty.

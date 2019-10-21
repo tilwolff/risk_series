@@ -14,11 +14,11 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 function get_time_series_definitions($db, $ts_name){
         //Get relevant time series defs
-        $sql="SELECT * FROM ts_def";
+        $sql="SELECT name, tag, meta FROM ts_def";
         if(null!=$ts_name){
                 if(''!=trim($ts_name)) $sql .= " WHERE name='" . $ts_name . "'";
         }
-        $sql .= " ORDER BY name asc, tag asc";
+        $sql .= " ORDER BY name asc, cast(tag as INTEGER) * case LOWER(SUBSTR(tag, -1)) WHEN 'y' THEN 360 WHEN 'm' THEN 30 WHEN 'w' THEN 7 ELSE 1 END asc, tag asc";
         $results = $db->query($sql);
         $ts_defs=array();
         while ($row = $results->fetchArray(SQLITE3_ASSOC)) { 
@@ -34,18 +34,26 @@ function serve_time_series_definitions(){
         
         $ts_defs=get_time_series_definitions($db, $ts_name);
         unset($db);
+
+	$format=null;
+	if(isset($_GET['FORMAT'])) $format=$_GET['FORMAT'];
+	if(isset($_GET['format'])) $format=$_GET['format'];
                 
-	if (!isset($_GET['FORMAT']) or $_GET['FORMAT'] == 'json' or $_GET['FORMAT'] == 'JSON') {			
+	if ($format == null or $format == 'json' or $format == 'JSON') {
+		header('Content-Type: application/json');				
 		echo json_encode($ts_defs,JSON_PRETTY_PRINT);	
-	} else {	
+	} else {
+		header('Content-Type: text/csv');
 		echo array_to_csv($ts_defs);
 	}
 
 }
 
 function serve_time_series($ts_name){
+
+	header('Content-Type: text/csv');
                 
-	/* parse $refined to extract from, to and asof dates. 
+	/* parse request to extract from, to and asof dates. 
 	   For dates from and to accepts both unix timestamp and YYYY-mm-dd date formats, 
 	   for asof accepts unix timestamp and YYYY-mm-dd HH:MM:SS.SSS formats, 
 	   with hours/minutes/seconds optional
@@ -172,7 +180,7 @@ function pivot($input,$tags) {
 				if ($date != null) { // if a previous date has already been worked out
 					// prepare a corresponding string to be added to output					
 					$date_string .= tags_values_string($tags,$tags_values_array);													
-					$output .= substr($date_string,0,-1) ."\n";// add to output a line with previous date and corresponding tag values				
+					$output .= substr($date_string,0,-1) ."\r\n";// add to output a line with previous date and corresponding tag values				
 				}
 				
 				// (re)initialise fields for new date				
@@ -196,7 +204,7 @@ function pivot($input,$tags) {
 		
 		// at the very end, prepare a string corresponding to last date worked out, to be added to output		
 		$date_string .= tags_values_string($tags,$tags_values_array);										
-		$output .= substr($date_string,0,-1) ."\n";// add to output a line with previous date and corresponding tag values				
+		$output .= substr($date_string,0,-1) ."\r\n";// add to output a line with previous date and corresponding tag values				
 				
 		return $output;		
 }
@@ -246,13 +254,13 @@ function array_to_csv($input) {
 		foreach($input[0] as $key => $key_value) {
 			$keystring .= $key.";";
 		}
-		$output = substr($keystring,0,-1)."\n";
+		$output = substr($keystring,0,-1)."\r\n";
 		foreach($input as $row) {
 			$valuestring='';	
 			foreach($row as $key => $key_value){
 				$valuestring .= $key_value.";";
 			}
-			$output .= substr($valuestring,0,-1)."\n";
+			$output .= substr($valuestring,0,-1)."\r\n";
 		}	
 		return $output;							
 }

@@ -1,22 +1,63 @@
-name;tag;default_risk_type;log_shift;csv_alias
-EUR_GOV;6M;differences;0.01;BBK01.WT3210
-EUR_GOV;1Y;differences;0.01;BBK01.WT3211
-EUR_GOV;10Y;differences;0.01;BBK01.WT3229
-EUR_GOV;11Y;differences;0.01;BBK01.WT3431
-EUR_GOV;12Y;differences;0.01;BBK01.WT3433
-EUR_GOV;13Y;differences;0.01;BBK01.WT3435
-EUR_GOV;14Y;differences;0.01;BBK01.WT3437
-EUR_GOV;15Y;differences;0.01;BBK01.WT3439
-EUR_GOV;16Y;differences;0.01;BBK01.WT3441
-EUR_GOV;17Y;differences;0.01;BBK01.WT3443
-EUR_GOV;18Y;differences;0.01;BBK01.WT3445
-EUR_GOV;19Y;differences;0.01;BBK01.WT3447
-EUR_GOV;2Y;differences;0.01;BBK01.WT3213
-EUR_GOV;20Y;differences;0.01;BBK01.WT3449
-EUR_GOV;3Y;differences;0.01;BBK01.WT3215
-EUR_GOV;4Y;differences;0.01;BBK01.WT3217
-EUR_GOV;5Y;differences;0.01;BBK01.WT3219
-EUR_GOV;6Y;differences;0.01;BBK01.WT3221
-EUR_GOV;7Y;differences;0.01;BBK01.WT3223
-EUR_GOV;8Y;differences;0.01;BBK01.WT3225
-EUR_GOV;9Y;differences;0.01;BBK01.WT3227
+name;tag;meta
+EUR_1M;1M;Raw data for EUR 1M swap curve
+EUR_1M;2Y;Raw data for EUR 1M swap curve
+EUR_1M;3Y;Raw data for EUR 1M swap curve
+EUR_1M;5Y;Raw data for EUR 1M swap curve
+EUR_1M;10Y;Raw data for EUR 1M swap curve
+EUR_1M;30Y;Raw data for EUR 1M swap curve
+EUR_3M;3M;Raw data for EUR 3M swap curve
+EUR_3M;2Y;Raw data for EUR 3M swap curve
+EUR_3M;3Y;Raw data for EUR 3M swap curve
+EUR_3M;5Y;Raw data for EUR 3M swap curve
+EUR_3M;10Y;Raw data for EUR 3M swap curve
+EUR_3M;30Y;Raw data for EUR 3M swap curve
+EUR_6M;6M;Raw data for EUR 6M swap curve
+EUR_6M;2Y;Raw data for EUR 6M swap curve
+EUR_6M;3Y;Raw data for EUR 6M swap curve
+EUR_6M;5Y;Raw data for EUR 6M swap curve
+EUR_6M;10Y;Raw data for EUR 6M swap curve
+EUR_6M;30Y;Raw data for EUR 6M swap curve
+EUR_GOV;1Y;Raw data for EUR government curve
+EUR_GOV;2Y;Raw data for EUR government curve
+EUR_GOV;3Y;Raw data for EUR government curve
+EUR_GOV;4Y;Raw data for EUR government curve
+EUR_GOV;5Y;Raw data for EUR government curve
+EUR_GOV;7Y;Raw data for EUR government curve
+EUR_GOV;10Y;Raw data for EUR government curve
+EUR_GOV;15Y;Raw data for EUR government curve
+EUR_GOV;20Y;Raw data for EUR government curve
+EUR_OIS;1D;Raw data for EUR overnight curve
+EUR_OIS;2Y;Raw data for EUR overnight curve
+EUR_OIS;3Y;Raw data for EUR overnight curve
+EUR_OIS;5Y;Raw data for EUR overnight curve
+EUR_OIS;10Y;Raw data for EUR overnight curve
+EUR_OIS;30Y;Raw data for EUR overnight curve
+EUR_PFAND;1Y;Raw data for EUR Pfandbrief curve
+EUR_PFAND;2Y;Raw data for EUR Pfandbrief curve
+EUR_PFAND;3Y;Raw data for EUR Pfandbrief curve
+EUR_PFAND;4Y;Raw data for EUR Pfandbrief curve
+EUR_PFAND;5Y;Raw data for EUR Pfandbrief curve
+EUR_PFAND;7Y;Raw data for EUR Pfandbrief curve
+EUR_PFAND;10Y;Raw data for EUR Pfandbrief curve
+EUR_PFAND;15Y;Raw data for EUR Pfandbrief curve
+EUR_PFAND;20Y;Raw data for EUR Pfandbrief curve
+USD_1M;2Y;Raw data for USD 1M swap curve
+USD_1M;3Y;Raw data for USD 1M swap curve
+USD_1M;5Y;Raw data for USD 1M swap curve
+USD_1M;10Y;Raw data for USD 1M swap curve
+USD_1M;30Y;Raw data for USD 1M swap curve
+USD_3M;2Y;Raw data for USD 3M swap curve
+USD_3M;3Y;Raw data for USD 3M swap curve
+USD_3M;5Y;Raw data for USD 3M swap curve
+USD_3M;10Y;Raw data for USD 3M swap curve
+USD_3M;30Y;Raw data for USD 3M swap curve
+USD_6M;2Y;Raw data for USD 6M swap curve
+USD_6M;3Y;Raw data for USD 6M swap curve
+USD_6M;5Y;Raw data for USD 6M swap curve
+USD_6M;10Y;Raw data for USD 6M swap curve
+USD_6M;30Y;Raw data for USD 6M swap curve
+USD_OIS;2Y;Raw data for USD overnight curve
+USD_OIS;3Y;Raw data for USD overnight curve
+USD_OIS;5Y;Raw data for USD overnight curve
+USD_OIS;10Y;Raw data for USD overnight curve
+USD_OIS;30Y;Raw data for USD overnight curve
