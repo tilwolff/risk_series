@@ -38,6 +38,7 @@ function update_time_series_definitions($ts_name){
 		$lines=file($upfile['tmp_name']);
 	}else{
 		//throw error end exit
+		header("HTTP/1.0 400 Bad Request");
 		echo '{"success": false, "error_message": "no file uploaded"}';
 		exit();
 	}
@@ -46,6 +47,7 @@ function update_time_series_definitions($ts_name){
 	$header=explode(";",trim($header));
 
 	if( $header[0]!="name" ||$header[1]!="tag" ||$header[2]!="meta"){
+		header("HTTP/1.0 400 Bad Request");
 		echo '{"success": false, "error_message": "Error: invalid csv file"}';
 		exit();
 	}
@@ -58,13 +60,15 @@ function update_time_series_definitions($ts_name){
 
 
 	$success=0;
-	$failure=0;
 
 	foreach($lines as $line) {
 		$line=explode(";",trim($line));
 		if(sizeof($line)!=sizeof($header)){  //ensure csv structure is valid
-			$failure++;
-			continue;
+			//throw error, rollback and and exit
+			$db->exec('ROLLBACK;');
+			header("HTTP/1.0 400 Bad Request");
+			echo '{"success": false, "error_message": "Error: invalid data in csv, line length does not match header."}';
+			exit();
 		}
 		$name=$line[0];
 		$tag=(""==$line[1]) ? null : $line[1];
@@ -73,13 +77,17 @@ function update_time_series_definitions($ts_name){
 		if($prepared->execute()){
 			$success++;
 		}else{
-			$failure++;
+			//throw error, rollback and and exit
+			$db->exec('ROLLBACK;');
+			header("HTTP/1.0 400 Bad Request");
+			echo '{"success": false, "error_message": "Error: invalid data in csv."}';
+			exit();
 		}
 	}
 
 	$db->exec('COMMIT;');
 	unset($db);
-	echo '{"success": ' . (($success>0)? 'true' : 'false') . ', "num_success": ' . $success . ', "num_failure": ' . $failure . '}';
+	echo '{"success": "true", "num_success": ' . $success . '}';
 }
 
 function update_time_series($ts_name){
@@ -110,6 +118,7 @@ function update_time_series($ts_name){
 		$lines=file($upfile['tmp_name']);
 	}else{
 		//throw error and exit
+		header("HTTP/1.0 400 Bad Request");
 		echo '{"success": false, "error_message": "Error: no file uploaded"}';
 		exit();
 	}
@@ -138,7 +147,6 @@ function update_time_series($ts_name){
 	$dt=null;
 	$value=null;
 	$success=0;
-	$failure=0;
 
 	$sql="INSERT INTO ts_data(ts_id, dt, value) VALUES((select ts_id from ts_def where name=:name and tag=:tag),strftime('%s',:dt),:value)";
 	$prepared=$db->prepare($sql);
@@ -150,13 +158,19 @@ function update_time_series($ts_name){
 	foreach($lines as $line) {
 		$line=explode(";",trim($line));
 		if(sizeof($line)!=sizeof($header)){  //ensure csv structure is valid
-			$failure++;
-			continue;
+			//throw error, rollback and and exit
+			$db->exec('ROLLBACK;');
+			header("HTTP/1.0 400 Bad Request");
+			echo '{"success": false, "error_message": "Error: invalid data in csv, line length does not match header."}';
+			exit();
 		}
 		$dt=$line[0];
 		if (strtotime($dt)==false){ //ensure date string is valid
-			$failure++;
-			continue;
+			//throw error, rollback and and exit
+			$db->exec('ROLLBACK;');
+			header("HTTP/1.0 400 Bad Request");
+			echo '{"success": false, "error_message": "Error: invalid date string in csv."}';
+			exit();
 		}
 		
 		for($i=1; $i<sizeof($header); $i++){ //handle all tags
@@ -166,7 +180,11 @@ function update_time_series($ts_name){
 			if($prepared->execute()){
 				$success++;
 			}else{
-				$failure++;
+				//throw error, rollback and and exit
+				$db->exec('ROLLBACK;');
+				header("HTTP/1.0 400 Bad Request");
+				echo '{"success": false, "error_message": "Error: invalid data in csv."}';
+				exit();
 			}
 		}
 	}
@@ -174,9 +192,7 @@ function update_time_series($ts_name){
 
 	$db->exec('COMMIT;');
 		
-	echo '{"success": ' . (($success>0)? 'true' : 'false') . ', "num_success": ' . $success . ', "num_failure": ' . $failure . '}';
-
-	//todo: return success message if at least one entry was valid and updated, return number of success and failure
+	echo '{"success": "true", "num_success": ' . $success . '}';
 
 	unset($db);      
 }

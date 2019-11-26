@@ -46,35 +46,57 @@ function serve_time_series_definitions(){
 		header('Content-Type: text/csv');
 		echo array_to_csv($ts_defs);
 	}
-
 }
 
-function get_time_series_dates($db,$fromdate=null,$todate=null){
+function get_time_series_dates($db,$fromdate,$todate, $asof){
 	
-	$sql="SELECT DISTINCT dt from ts_data ";
+	$sql="SELECT DISTINCT dt FROM ts_data
+		WHERE dt >= $fromdate
+		AND   dt <  $todate
+		AND   updated < $asof
+		ORDER BY dt asc
+	";
 		
-	if($fromdate != null || $todate != null ) {
-		$sql .= " WHERE ";
-	}
-	if ($fromdate != null){
-		null!=$ts_name ? $sql .= " AND " : $sql .= "";
-		$sql .= " dt >=  '".$fromdate."' ";
-	}
-	if ($todate != null){
-		(null!=$ts_name || null!=$fromdate) ? $sql .= " AND " : $sql .= "";
-		$sql .= " dt < '".$todate."' ";
-	}
-	
-	$sql .= " ORDER BY dt asc"; 
-	
 	$results = $db->query($sql);
 		
 	$ts_dates =array();
 	while ($row = $results->fetchArray(SQLITE3_ASSOC)) { 
-		
-			array_push($ts_dates, $row);
+		array_push($ts_dates, $row['dt']);
 	} 
 	return $ts_dates; 
+}
+
+function get_time_series_data($db, $ts_name, $fromdate, $todate, $asof){
+	
+	$sql="SELECT 	tag,
+			dt,
+			updated,
+			value
+		FROM 	ts_data inner join ts_def on ts_data.ts_id=ts_def.ts_id
+		WHERE	name= 		'$ts_name'
+		AND 	dt >= 		$fromdate
+		AND 	dt <  		$todate
+		AND	updated < 	$asof
+		ORDER BY
+			dt asc,
+			cast(tag as INTEGER) * case LOWER(SUBSTR(tag, -1)) WHEN 'y' THEN 360 WHEN 'm' THEN 30 WHEN 'w' THEN 7 ELSE 1 END asc,
+			updated desc
+	";
+
+	$results = $db->query($sql);
+		
+	$ts_data =array();
+	$dt=null;
+	$tag=null;
+	while ($row = $results->fetchArray(SQLITE3_ASSOC)) {
+		if($row['dt']!=$dt || $row['tag']!= $tag){
+			//most recent update
+			array_push($ts_data, $row);
+			$dt=$row['dt'];
+			$tag=$row['tag'];
+		} //throw away data if not most recent update
+	} 
+	return $ts_data; 
 }
 
 function serve_time_series($ts_name){
@@ -128,149 +150,62 @@ function serve_time_series($ts_name){
 			$asof = $asof;
 		}				
 	}
- 
-	// formulate sql query
-	
-	$sql="SELECT name, tag, dt, updated, value from ts_data inner join ts_def on ts_data.ts_id=ts_def.ts_id";
-	if($ts_name != null || $fromdate != null || $todate != null || $asof != null ) {
-		$sql .= " WHERE ";
-	}
-	if(null!=$ts_name){
-			if(''!=trim($ts_name)) $sql .= " name='" . $ts_name. "'";
-	} 
-                          
-	// modify sql query to allow for selection of dates and asof:
-        if ($fromdate != null){
-		null!=$ts_name ? $sql .= " AND " : $sql .= "";
-		$sql .= " dt >= '".$fromdate."'";
-	}
-	if ($todate != null){
-		(null!=$ts_name || null!=$fromdate) ? $sql .= " AND " : $sql .= "";
-		$sql .= " dt < '".$todate."'";
-	} 
-	if ($asof != null) {
-		(null!=$ts_name|| null!= $fromdate || null!= $todate) ? $sql .= " AND " : $sql .= "";
-		$sql .= " (updated < '".$asof."')" ;
-	} 
-	$sql .= " ORDER BY name asc, dt asc, tag asc, updated desc"; 
-	  
-	
-	//call function opening database, working query, and close connection to database 
-	
-	serve_times_series_query_db($sql,$ts_name,$fromdate,$todate,$asof);  
-	
-}
 
-function serve_times_series_query_db($sql,$ts_name,$fromdate,$todate,$asof){
-	
+	if($fromdate==null) $fromdate=0;
+	if($todate==null) $todate=strtotime("2999-12-31");
+	if($asof==null) $asof=strtotime("2999-12-31");
+
 	// connect to database and work out queries
 	
 	$db=new SQLite3("./db/data.sqlite", SQLITE3_OPEN_READONLY);
 	
-	$db->query("BEGIN TRAN");
+	$db->exec("BEGIN TRANSACTION");
 		   					
-	$tags = get_tags($db,$ts_name);  // get tags via sql
+	$tags = get_tags($db, $ts_name);  // get tags from db
+	$dates = get_time_series_dates($db, $fromdate, $todate, $asof);   // get dates from db
+	$results = get_time_series_data($db, $ts_name, $fromdate, $todate, $asof);  // get time series data from db
 	
-	$dates = get_time_series_dates($db,$fromdate,$todate);   // get dates
-	
-	$results = $db->query($sql);  // get time series
-	
-	$db->query("ROLLBACK TRAN");
+	$db->exec("ROLLBACK TRANSACTION");
 			
 	unset($db);  // unset connection to the database
-		
-	$ts_defs_refined =array();
-	while ($row = $results->fetchArray(SQLITE3_ASSOC)) { 
-			array_push($ts_defs_refined, $row);
-	}  
 
-	// pivotise results and output as csv   
-	  	
-	if (!empty($ts_defs_refined)) { 		
-		$pivot = pivot_name($ts_defs_refined,$ts_name,$tags,$dates);				
-		echo $pivot;   
-	} else {
-		echo '';  // output empty string if queried range of dates contains no data
-	}    
+	$results=pivot($results, $tags, $dates); //pivotise results
+
+	//write out results	
+	header('Content-Type: text/csv');
+	echo $ts_name.";".implode(";", $tags)."\r\n";
+	$ndates=count($dates);
+	for ($idate=0;$idate<$ndates;$idate++){
+		echo date('Y-m-d',$dates[$idate]).";".implode(";", $results[$idate])."\r\n";
+	}
 }
 
-// functions called by in serve_time_series($ts_name)
-
-function pivot_name($input,$name,$tags,$dates) {
-						
-	$output = '';
-	$date_tags_nullstring = '';			
-	$head = $name ;
-	foreach ($tags as $tag) {
-		$head .= ';'.$tag ;
-		$date_tags_nullstring .= ';'; 
-	}
-	$date_tags_nullstring=substr($date_tags_nullstring,0.-1);				
-	$output .= $head."\n";  // add to output a line containing the name and the list of tags
-			
-	foreach ($dates as $date) {	
-		
-		$date_string = date('Y-m-d',$date['dt']).';';
-		$date_found = False;
-		$tags_values_array=array(); // at each date re-initialize tags_values_array
-		
-		foreach ($input as $row) {					
-			if ($date['dt'] == $row['dt']) {						
-				$date_found = True;						
-				foreach ($tags as $tag) {
-					if ($row['tag'] == $tag) {
-						// keep just the first not-null result: it corresponds to asof value
-						if ($tags_values_array[$tag] != null) {
-							continue;
-						} else {	
-							$tags_values_array = array_merge($tags_values_array,array($tag => $row['value']));									
-						}	
-					} 
-				}					
-			} 							
+function pivot($input,$tags,$dates) {
+	$ntags=count($tags);
+	$ndates=count($dates);
+	//initialise result
+	$res=array_fill(0, $ndates, array_fill(0, $ntags, null));
+	//loop through input
+	$row=array_shift($input);
+	for ($idate=0;$idate<$ndates;$idate++){
+		for($itag=0;$itag<$ntags;$itag++){
+			if($tags[$itag]==$row['tag'] && $dates[$idate]==$row['dt']){
+				//record fits tag and date, add it to result and retrieve next row
+				$res[$idate][$itag]=$row['value'];
+				$row=array_shift($input);
+			}		
 		}
-		if ($date_found == True) {
-			$date_string .= substr(tags_values_string($tags,$tags_values_array),0,-1);	
-			// take out from input all entries corresponding to the already worked-out date 
-			//(to check whether this operation in the end reduces computation time)
-			foreach ($input as $entry) {
-				if ($entry['dt'] == $date['dt']) {
-					array_shift($input);
-				} else {
-					break;
-				}
-			}	
-		}
-		else {
-			$date_string .= $date_tags_nullstring;
-		}						
-		$output .= $date_string."\n";
-		array_shift($dates);						
 	}
-	return $output; 	
+	return $res;
 }
 
-function get_tags ($db,$ts_name) {			
-    $tags_name=array();
-    $tags_defs=get_time_series_definitions($db, $ts_name);    
-    foreach ($tags_defs as $tag) {
+function get_tags($db,$ts_name) {			
+	$tags_name=array();
+	$tags_defs=get_time_series_definitions($db, $ts_name);    
+	foreach ($tags_defs as $tag) {
 		array_push($tags_name, $tag['tag']);
 	}	
 	return $tags_name;
-}
-
-// loop over all tag names to get their value (for a given date) and returns a csv string
-function tags_values_string($tags,$tags_values_array) {
-		$string = '';
-		foreach ($tags as $def_tag) {
-			foreach ($tags_values_array as $tag =>$tag_value){
-				$tag == $def_tag ? $string .= $tag_value : $string .= '';								
-			}
-			$string .= ';'; /* at the end of the loop, 
-								no matter whether a value for this tag has been found or not, 
-								create a csv entry*/
-		}
-		return $string;	
 }
 
 // simple array to csv conversion, without pivoting, useful for outputting  /def as csv:

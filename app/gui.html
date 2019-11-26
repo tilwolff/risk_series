@@ -122,6 +122,11 @@ function send_data(url){
 
 			}
 			alert_text.innerHTML+=req.responseText;
+		}else if(req.status===400){
+			var result=JSON.parse(req.responseText);
+			alert.classList.add("alert-danger");
+			alert.classList.remove("alert-info");				
+			alert_text.innerHTML=result.error_message || "Error: an error occurred, but the error message could not be retrieved.";
 		}else{
 				alert.classList.add("alert-danger");
 				alert.classList.remove("alert-info");

@@ -33,7 +33,7 @@ EUR_OIS;5Y;Raw data for EUR overnight curve
 EUR_OIS;10Y;Raw data for EUR overnight curve
 EUR_OIS;30Y;Raw data for EUR overnight curve
 EUR_PFA;1Y;Raw data for EUR Pfandbrief curve
-EUR_PFA;2Y;Raw data for EUR Pfandbrief curve
+EUR_PFA;Raw data for EUR Pfandbrief curve
 EUR_PFA;3Y;Raw data for EUR Pfandbrief curve
 EUR_PFA;4Y;Raw data for EUR Pfandbrief curve
 EUR_PFA;5Y;Raw data for EUR Pfandbrief curve
