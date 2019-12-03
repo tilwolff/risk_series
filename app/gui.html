@@ -110,7 +110,7 @@ function send_data(url){
 			if (result.success){
 				alert.classList.add("alert-info");
 				alert.classList.remove("alert-danger");
-				alert_text.innerHTML="Data upload was successful." + result.num_success + " records updated, " + result.num_failure + " records were invalid.";
+				alert_text.innerHTML="Data upload was successful. " + result.num_success + " records updated.";
 			}else{
 				alert.classList.add("alert-danger");
 				alert.classList.remove("alert-info");
@@ -121,7 +121,6 @@ function send_data(url){
 				}
 
 			}
-			alert_text.innerHTML+=req.responseText;
 		}else if(req.status===400){
 			var result=JSON.parse(req.responseText);
 			alert.classList.add("alert-danger");

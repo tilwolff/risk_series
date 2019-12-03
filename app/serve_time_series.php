@@ -12,6 +12,44 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 */
 
+function err_name_not_found(){
+	header("HTTP/1.0 404 Not Found");
+	header('Content-Type: application/json');
+	echo '{"success": false, "error_message": "the requested time series does not exist"}';
+	exit();
+}
+
+function get_time_series_names($db){
+	//Get relevant time series defs
+	$sql="SELECT DISTINCT name FROM ts_def ORDER BY name asc";
+	$results = $db->query($sql);
+	$ts_names=array();
+	while ($row = $results->fetchArray(SQLITE3_ASSOC)) { 
+			array_push($ts_names, $row['name']);
+	}
+	return $ts_names;
+}
+
+function serve_time_series_names(){			
+	$db=new SQLite3("./db/data.sqlite", SQLITE3_OPEN_READONLY);
+	$ts_name='';
+	
+	$ts_names=get_time_series_names($db);
+	unset($db);
+
+	$format=null;
+	if(isset($_GET['FORMAT'])) $format=$_GET['FORMAT'];
+	if(isset($_GET['format'])) $format=$_GET['format'];
+                
+	if ($format == null or $format == 'json' or $format == 'JSON') {
+		header('Content-Type: application/json');				
+		echo json_encode($ts_names,JSON_PRETTY_PRINT);	
+	} else {
+		header('Content-Type: text/csv');
+		echo "Name\r\n" . implode("\r\n", $ts_names);
+	}
+}
+
 function get_time_series_definitions($db, $ts_name){
 	//Get relevant time series defs
 	$sql="SELECT name, tag, meta FROM ts_def";
@@ -26,6 +64,7 @@ function get_time_series_definitions($db, $ts_name){
 	}
 	return $ts_defs;
 }
+
 
 function serve_time_series_definitions(){
 				
@@ -60,6 +99,8 @@ function get_time_series_dates($db,$fromdate,$todate, $asof){
 	$results = $db->query($sql);
 		
 	$ts_dates =array();
+	if(!$results) return $ts_dates;
+
 	while ($row = $results->fetchArray(SQLITE3_ASSOC)) { 
 		array_push($ts_dates, $row['dt']);
 	} 
@@ -86,6 +127,8 @@ function get_time_series_data($db, $ts_name, $fromdate, $todate, $asof){
 	$results = $db->query($sql);
 		
 	$ts_data =array();
+	if(!$results) return $ts_data;
+
 	$dt=null;
 	$tag=null;
 	while ($row = $results->fetchArray(SQLITE3_ASSOC)) {
@@ -127,6 +170,12 @@ function serve_time_series($ts_name){
 
 	if($ts_name==null && isset($_GET['name'])) $ts_name=$_GET['name'];
 	if($ts_name==null && isset($_GET['NAME'])) $ts_name=$_GET['NAME'];
+	//if no name is set, return array of names
+	if($ts_name==null){
+		serve_time_series_names();
+		exit();
+	}
+	
 
 	if ($fromdate!= null){
 		$fromdate=(strlen((int)$fromdate) == strlen($fromdate))? 
@@ -162,6 +211,8 @@ function serve_time_series($ts_name){
 	$db->exec("BEGIN TRANSACTION");
 		   					
 	$tags = get_tags($db, $ts_name);  // get tags from db
+	if (!count($tags)) err_name_not_found(); //exit if no tags of that name were found
+
 	$dates = get_time_series_dates($db, $fromdate, $todate, $asof);   // get dates from db
 	$results = get_time_series_data($db, $ts_name, $fromdate, $todate, $asof);  // get time series data from db
 	
@@ -183,8 +234,12 @@ function serve_time_series($ts_name){
 function pivot($input,$tags,$dates) {
 	$ntags=count($tags);
 	$ndates=count($dates);
+	if(0==$ndates) return Array();
+
 	//initialise result
 	$res=array_fill(0, $ndates, array_fill(0, $ntags, null));
+	if(0==count($input)) return $res; //return null data if no data found
+
 	//loop through input
 	$row=array_shift($input);
 	for ($idate=0;$idate<$ndates;$idate++){
