@@ -32,6 +32,7 @@ function get_time_series_names($db){
 
 function serve_time_series_names(){			
 	$db=new SQLite3("./db/data.sqlite", SQLITE3_OPEN_READONLY);
+	$db->busyTimeout(3000);
 	$ts_name='';
 	
 	$ts_names=get_time_series_names($db);
@@ -69,6 +70,7 @@ function get_time_series_definitions($db, $ts_name){
 function serve_time_series_definitions(){
 				
 	$db=new SQLite3("./db/data.sqlite", SQLITE3_OPEN_READONLY);
+	$db->busyTimeout(3000);
 	$ts_name='';
 	
 	$ts_defs=get_time_series_definitions($db, $ts_name);
@@ -207,6 +209,7 @@ function serve_time_series($ts_name){
 	// connect to database and work out queries
 	
 	$db=new SQLite3("./db/data.sqlite", SQLITE3_OPEN_READONLY);
+	$db->busyTimeout(3000);
 	
 	$db->exec("BEGIN TRANSACTION");
 		   					

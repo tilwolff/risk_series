@@ -16,6 +16,7 @@ function update_time_series_definitions($ts_name){
 	
 	//create database and table if not existing
 	$db=new SQLite3("./db/data.sqlite");
+	$db->busyTimeout(3000);
 
 	$db->exec('BEGIN;');
 
@@ -96,6 +97,7 @@ function update_time_series($ts_name){
 
 	//create database and table if not existing
 	$db=new SQLite3("./db/data.sqlite");
+	$db->busyTimeout(3000);
 
 	$db->exec('BEGIN;');
 
