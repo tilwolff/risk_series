@@ -203,8 +203,8 @@ function serve_time_series($ts_name){
 	}
 
 	if($fromdate==null) $fromdate=0;
-	if($todate==null) $todate=strtotime("2999-12-31");
-	if($asof==null) $asof=strtotime("2999-12-31");
+	if($todate==null) $todate=PHP_INT_MAX;
+	if($asof==null) $asof=PHP_INT_MAX;
 
 	// connect to database and work out queries
 	
