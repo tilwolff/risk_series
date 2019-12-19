@@ -202,7 +202,7 @@ function serve_time_series($ts_name){
 		}				
 	}
 
-	if($fromdate==null) $fromdate=0;
+	if($fromdate==null) $fromdate=PHP_INT_MIN;
 	if($todate==null) $todate=PHP_INT_MAX;
 	if($asof==null) $asof=PHP_INT_MAX;
 
