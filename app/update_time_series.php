@@ -10,191 +10,223 @@ The above copyright notice and this permission notice shall be included in all c
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
+include('token.php');
+
 function update_time_series_definitions($ts_name){
-        //Update time series defs
-	header('Content-Type: application/json'); //return failure or success in JSON format
-	
-	//create database and table if not existing
-	$db=new SQLite3("./db/data.sqlite");
-	$db->busyTimeout(3000);
 
-	$db->exec('BEGIN;');
+	// allow only authorized access 
+	$headers = apache_request_headers();
+	if(isset($headers['Authorization'])){
 
-	$sql="CREATE TABLE IF NOT EXISTS ts_def(
-		ts_id INTEGER NOT NULL PRIMARY KEY,
-		name TEXT NOT NULL,
-		tag TEXT,
-		meta TEXT,
-		CONSTRAINT unique_series_def UNIQUE (name, tag))";
+		if (get_token() === $headers['Authorization']) {
 
-	$db->exec($sql);
+			//Update time series defs
+			header('Content-Type: application/json'); //return failure or success in JSON format
+			
+			//create database and table if not existing
+			$db=new SQLite3("./db/data.sqlite");
+			$db->busyTimeout(3000);
 
-	//get uploaded content
-	$upfile=null;
-	if (isset($_FILES['file'])) $upfile=$_FILES['file'];
-	if (isset($_FILES['FILE'])) $upfile=$_FILES['FILE'];
+			$db->exec('BEGIN;');
 
-	if($upfile && $upfile['size']){
-		//file has positive size, get its contents as array
-		$lines=file($upfile['tmp_name']);
-	}else{
-		//throw error end exit
-		header("HTTP/1.0 400 Bad Request");
-		echo '{"success": false, "error_message": "no file uploaded"}';
-		exit();
-	}
+			$sql="CREATE TABLE IF NOT EXISTS ts_def(
+				ts_id INTEGER NOT NULL PRIMARY KEY,
+				name TEXT NOT NULL,
+				tag TEXT,
+				meta TEXT,
+				CONSTRAINT unique_series_def UNIQUE (name, tag))";
 
-	$header=array_shift($lines);
-	$header=explode(";",trim($header));
+			$db->exec($sql);
 
-	if( $header[0]!="name" ||$header[1]!="tag" ||$header[2]!="meta"){
-		header("HTTP/1.0 400 Bad Request");
-		echo '{"success": false, "error_message": "Error: invalid csv file"}';
-		exit();
-	}
+			//get uploaded content
+			$upfile=null;
+			if (isset($_FILES['file'])) $upfile=$_FILES['file'];
+			if (isset($_FILES['FILE'])) $upfile=$_FILES['FILE'];
 
-	$sql="REPLACE INTO ts_def(name, tag, meta) VALUES(:name,:tag,:meta)";
-	$prepared=$db->prepare($sql);
-	$prepared->bindParam(':name', $name);
-	$prepared->bindParam(':tag', $tag);
-	$prepared->bindParam(':meta', $meta);
+			if($upfile && $upfile['size']){
+				//file has positive size, get its contents as array
+				$lines=file($upfile['tmp_name']);
+			}else{
+				//throw error end exit
+				header("HTTP/1.0 400 Bad Request");
+				echo '{"success": false, "error_message": "no file uploaded"}';
+				exit();
+			}
+
+			$header=array_shift($lines);
+			$header=explode(";",trim($header));
+
+			if( $header[0]!="name" ||$header[1]!="tag" ||$header[2]!="meta"){
+				header("HTTP/1.0 400 Bad Request");
+				echo '{"success": false, "error_message": "Error: invalid csv file"}';
+				exit();
+			}
+
+			$sql="REPLACE INTO ts_def(name, tag, meta) VALUES(:name,:tag,:meta)";
+			$prepared=$db->prepare($sql);
+			$prepared->bindParam(':name', $name);
+			$prepared->bindParam(':tag', $tag);
+			$prepared->bindParam(':meta', $meta);
 
 
-	$success=0;
+			$success=0;
 
-	foreach($lines as $line) {
-		$line=explode(";",trim($line));
-		if(sizeof($line)!=sizeof($header)){  //ensure csv structure is valid
-			//throw error, rollback and and exit
-			$db->exec('ROLLBACK;');
-			header("HTTP/1.0 400 Bad Request");
-			echo '{"success": false, "error_message": "Error: invalid data in csv, line length does not match header."}';
-			exit();
+			foreach($lines as $line) {
+				$line=explode(";",trim($line));
+				if(sizeof($line)!=sizeof($header)){  //ensure csv structure is valid
+					//throw error, rollback and and exit
+					$db->exec('ROLLBACK;');
+					header("HTTP/1.0 400 Bad Request");
+					echo '{"success": false, "error_message": "Error: invalid data in csv, line length does not match header."}';
+					exit();
+				}
+				$name=$line[0];
+				$tag=(""==$line[1]) ? null : $line[1];
+				$meta=(""==$line[2]) ? null : $line[2];
+				$prepared->execute();
+				if($prepared->execute()){
+					$success++;
+				}else{
+					//throw error, rollback and and exit
+					$db->exec('ROLLBACK;');
+					header("HTTP/1.0 400 Bad Request");
+					echo '{"success": false, "error_message": "Error: invalid data in csv."}';
+					exit();
+				}
+			}
+
+			$db->exec('COMMIT;');
+			unset($db);
+			echo '{"success": "true", "num_success": ' . $success . '}';
+		} else {
+			header("HTTP/1.0 401 Unauthorized");
+			echo '{"success": false, "error_message": "Error: authentication failure."}';
 		}
-		$name=$line[0];
-		$tag=(""==$line[1]) ? null : $line[1];
-		$meta=(""==$line[2]) ? null : $line[2];
-		$prepared->execute();
-		if($prepared->execute()){
-			$success++;
-		}else{
-			//throw error, rollback and and exit
-			$db->exec('ROLLBACK;');
-			header("HTTP/1.0 400 Bad Request");
-			echo '{"success": false, "error_message": "Error: invalid data in csv."}';
-			exit();
-		}
+	} else {
+		header("HTTP/1.0 401 Unauthorized");
+		echo '{"success": false, "error_message": "Error: authentication required."}';
 	}
-
-	$db->exec('COMMIT;');
-	unset($db);
-	echo '{"success": "true", "num_success": ' . $success . '}';
 }
 
 function update_time_series($ts_name){
-        //Update time series data
-	header('Content-Type: application/json'); //return failure or success in JSON format
 
-	//create database and table if not existing
-	$db=new SQLite3("./db/data.sqlite");
-	$db->busyTimeout(3000);
+	// allow only authorized access 
+	$headers = apache_request_headers();
+	if(isset($headers['Authorization'])){
 
-	$db->exec('BEGIN;');
+		if (get_token() === $headers['Authorization']) {
 
-	$sql="CREATE TABLE IF NOT EXISTS ts_data(
-		ts_id INTEGER NOT NULL,
-		dt INTEGER NOT NULL,
-		updated INTEGER DEFAULT ((julianday('now') -2440587.5)*86400.0),
-		value REAL NOT NULL,
-		PRIMARY KEY (ts_id, dt, updated))";
+				//Update time series data
+			header('Content-Type: application/json'); //return failure or success in JSON format
 
-	$db->exec($sql);
+			//create database and table if not existing
+			$db=new SQLite3("./db/data.sqlite");
+			$db->busyTimeout(3000);
 
-	//get uploaded content
-	$upfile=null;
-	if (isset($_FILES['file'])) $upfile=$_FILES['file'];
-	if (isset($_FILES['FILE'])) $upfile=$_FILES['FILE'];
+			$db->exec('BEGIN;');
 
-	if($upfile && $upfile['size']){
-		//file has positive size, get its contents as array
-		$lines=file($upfile['tmp_name']);
-	}else{
-		//throw error and exit
-		header("HTTP/1.0 400 Bad Request");
-		echo '{"success": false, "error_message": "Error: no file uploaded"}';
-		exit();
-	}
+			$sql="CREATE TABLE IF NOT EXISTS ts_data(
+				ts_id INTEGER NOT NULL,
+				dt INTEGER NOT NULL,
+				updated INTEGER DEFAULT ((julianday('now') -2440587.5)*86400.0),
+				value REAL NOT NULL,
+				PRIMARY KEY (ts_id, dt, updated))";
 
-	$header=array_shift($lines);
-	$header=explode(";",trim($header));
+			$db->exec($sql);
 
-	//todo: validate header, must contain all valid fields
+			//get uploaded content
+			$upfile=null;
+			if (isset($_FILES['file'])) $upfile=$_FILES['file'];
+			if (isset($_FILES['FILE'])) $upfile=$_FILES['FILE'];
 
-	function retrieve_number($str){
-		$in=$str;
-		if (1==substr_count($in,',')) $in=str_replace(',','.',$in);
-		if(is_numeric($in)) return floatval($in);
-		return null;
-	}
-	
-	//update only the requsted name if given in url path or GET parameter
-	if($ts_name==null && isset($_GET['name'])) $ts_name=$_GET['name'];
-	if($ts_name==null && isset($_GET['NAME'])) $ts_name=$_GET['NAME'];
-	//otherwise, retrieve name from first field in uploaded file header
-	if($ts_name==null) $ts_name=$header[0];
-
-	//now start updating
-
-	$tag=null;
-	$dt=null;
-	$value=null;
-	$success=0;
-
-	$sql="INSERT INTO ts_data(ts_id, dt, value) VALUES((select ts_id from ts_def where name=:name and tag=:tag),strftime('%s',:dt),:value)";
-	$prepared=$db->prepare($sql);
-	$prepared->bindParam(':name', $ts_name);
-	$prepared->bindParam(':tag', $tag);
-	$prepared->bindParam(':dt', $dt);
-	$prepared->bindParam(':value', $value);
-
-	foreach($lines as $line) {
-		$line=explode(";",trim($line));
-		if(sizeof($line)!=sizeof($header)){  //ensure csv structure is valid
-			//throw error, rollback and and exit
-			$db->exec('ROLLBACK;');
-			header("HTTP/1.0 400 Bad Request");
-			echo '{"success": false, "error_message": "Error: invalid data in csv, line length does not match header."}';
-			exit();
-		}
-		$dt=$line[0];
-		if (strtotime($dt)==false){ //ensure date string is valid
-			//throw error, rollback and and exit
-			$db->exec('ROLLBACK;');
-			header("HTTP/1.0 400 Bad Request");
-			echo '{"success": false, "error_message": "Error: invalid date string in csv."}';
-			exit();
-		}
-		
-		for($i=1; $i<sizeof($header); $i++){ //handle all tags
-		        $value=retrieve_number($line[$i]);
-		        if ($value==null) continue;
-			$tag=$header[$i];
-			if($prepared->execute()){
-				$success++;
+			if($upfile && $upfile['size']){
+				//file has positive size, get its contents as array
+				$lines=file($upfile['tmp_name']);
 			}else{
-				//throw error, rollback and and exit
-				$db->exec('ROLLBACK;');
+				//throw error and exit
 				header("HTTP/1.0 400 Bad Request");
-				echo '{"success": false, "error_message": "Error: invalid data in csv."}';
+				echo '{"success": false, "error_message": "Error: no file uploaded"}';
 				exit();
 			}
+
+			$header=array_shift($lines);
+			$header=explode(";",trim($header));
+
+			//todo: validate header, must contain all valid fields
+
+			function retrieve_number($str){
+				$in=$str;
+				if (1==substr_count($in,',')) $in=str_replace(',','.',$in);
+				if(is_numeric($in)) return floatval($in);
+				return null;
+			}
+			
+			//update only the requsted name if given in url path or GET parameter
+			if($ts_name==null && isset($_GET['name'])) $ts_name=$_GET['name'];
+			if($ts_name==null && isset($_GET['NAME'])) $ts_name=$_GET['NAME'];
+			//otherwise, retrieve name from first field in uploaded file header
+			if($ts_name==null) $ts_name=$header[0];
+
+			//now start updating
+
+			$tag=null;
+			$dt=null;
+			$value=null;
+			$success=0;
+
+			$sql="INSERT INTO ts_data(ts_id, dt, value) VALUES((select ts_id from ts_def where name=:name and tag=:tag),strftime('%s',:dt),:value)";
+			$prepared=$db->prepare($sql);
+			$prepared->bindParam(':name', $ts_name);
+			$prepared->bindParam(':tag', $tag);
+			$prepared->bindParam(':dt', $dt);
+			$prepared->bindParam(':value', $value);
+
+			foreach($lines as $line) {
+				$line=explode(";",trim($line));
+				if(sizeof($line)!=sizeof($header)){  //ensure csv structure is valid
+					//throw error, rollback and and exit
+					$db->exec('ROLLBACK;');
+					header("HTTP/1.0 400 Bad Request");
+					echo '{"success": false, "error_message": "Error: invalid data in csv, line length does not match header."}';
+					exit();
+				}
+				$dt=$line[0];
+				if (strtotime($dt)==false){ //ensure date string is valid
+					//throw error, rollback and and exit
+					$db->exec('ROLLBACK;');
+					header("HTTP/1.0 400 Bad Request");
+					echo '{"success": false, "error_message": "Error: invalid date string in csv."}';
+					exit();
+				}
+				
+				for($i=1; $i<sizeof($header); $i++){ //handle all tags
+						$value=retrieve_number($line[$i]);
+						if ($value==null) continue;
+					$tag=$header[$i];
+					if($prepared->execute()){
+						$success++;
+					}else{
+						//throw error, rollback and and exit
+						$db->exec('ROLLBACK;');
+						header("HTTP/1.0 400 Bad Request");
+						echo '{"success": false, "error_message": "Error: invalid data in csv."}';
+						exit();
+					}
+				}
+			}
+
+
+			$db->exec('COMMIT;');
+				
+			echo '{"success": "true", "num_success": ' . $success . '}';
+
+			unset($db);
+		} else {
+			header("HTTP/1.0 401 Unauthorized");
+			echo '{"success": false, "error_message": "Error: authentication failure."}';
 		}
-	}
-
-
-	$db->exec('COMMIT;');
-		
-	echo '{"success": "true", "num_success": ' . $success . '}';
-
-	unset($db);      
+	}   else {
+		header("HTTP/1.0 401 Unauthorized");
+		echo '{"success": false, "error_message": "Error: authentication required."}';
+	}   
 }

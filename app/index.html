@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html>
+<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+<meta charset="utf-8"/>
+<title>Risk Series</title>
+<link rel="icon" href="favicon.png" type="image/png">
+
+<!--
+bootstrap
+-->
+<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
+<script src="https://code.jquery.com/jquery-3.2.1.slim.min.js" integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js" integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q" crossorigin="anonymous"></script>
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js" integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl" crossorigin="anonymous"></script>
+
+<!--
+angular js
+-->
+<!-- <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.6.4/angular.min.js"></script>-->
+<script src="./lib/angular/angular.js"></script>
+
+<!--
+Papa Parse
+-->
+<script src="./app/papaparse.min.js"></script>
+
+<!--
+Chart
+-->
+<script src="./app/Chart.min.js"></script>
+
+<!--
+main app
+-->
+<script src="./app/main.js"></script>
+
+<!--
+upload forms
+-->
+<script src="./app/upload.js"></script>
+
+<!--
+authorization token
+-->
+<script src="./app/authorization.js"></script>
+
+<body ng-app="seriesapp" ng-controller="main_ctrl">
+    <nav class="navbar navbar-light bg-light justify-content-between">
+
+        <a class="navbar-brand" href="#">
+            <img src="./app/favicon.png" width="30" height="30" class="d-inline-block align-top" alt="">
+            Risk Series
+        </a>
+
+    </nav>
+    
+    <!--
+        Download time series
+    -->
+    <div class="container-fluid font-weight-light">
+
+        <div class="row">
+
+            <div class="col-lg-6">
+
+                <div class="card m-1 bg-light">
+                    <div class="card-body">
+                        <form>
+
+                            <h4 class="card-title">Download time series</h4>
+                            
+                            <div class="form-group form-group-sm">
+                                <label for="fullname">Name</label>
+                                <input class="form-control" name="NAME" type="text" ng-model="queried_time_series.name" placeholder="Name">
+
+                                <label for="fullname">From</label>
+                                <input class="form-control" name="FROM" type="text" ng-model="queried_time_series.from" placeholder="YYYY-MM-DD">
+
+                                <label for="fullname">To</label>
+                                <input class="form-control" name="TO" type="text" ng-model="queried_time_series.to" placeholder="YYYY-MM-DD">
+
+                                <label for="fullname">Asof</label>
+                                <input class="form-control" name="ASOF" type="text" ng-model="queried_time_series.asof" placeholder="YYYY-MM-DDTHH:MM:SS">
+                            </div>
+                                
+                            <button type="submit" class="btn btn-secondary" ng-click="downloadData()">Download</button>
+
+                        </form>
+                    </div>
+                </div>
+            
+                <div class="card m-1 bg-light">
+                    <div class="card-body">
+
+                        <h4 class="card-title">Show time series definitions</h4>
+                                
+                        <button type="submit" class="btn btn-secondary" ng-click="downloadDefinitions()">Download</button>
+
+                    </div>
+                </div>
+                
+            </div><!-- col-6 -->
+            
+            <div class="col-lg-6">
+                <div class="card m-1 bg-light">
+                    <div class="card-body">
+                        <!-- <form id="form_def" enctype="multipart/form-data">-->
+                        <form id="form_def">
+                            <h4 class="card-title">Upload time series definitions</h4>
+                            
+                            <div class="form-group form-group-sm">
+                                <label for="fullname">Name</label>
+                                <input class="form-control" name="fullname" 
+                                    type="text" value="" placeholder="Name"
+                                    ng-model="upload_def.fullname">
+                                <label for="fullname">File</label>
+                                <input class="form-control-file" 
+                                    type="file" name="file"
+                                    ng-model="upload_def.file">
+                            </div>
+                            
+                            <button type="submit" class="btn btn-secondary" ng-click="send_def('def')">Upload</button>
+                        </form>
+                    </div>
+                </div>
+            
+                <div class="card m-1 bg-light">
+                    <div class="card-body">
+                        <form id="form_data">
+                            <h4 class="card-title">Upload time series</h4>
+                            
+                            <div class="form-group form-group-sm">
+                                <label for="fullname">Name</label>
+                                <input class="form-control" name="fullname" 
+                                    type="text" value="" placeholder="Name"
+                                    ng-model="upload_data.fullname">
+                                <label for="fullname">File</label>
+                                <input class="form-control-file" 
+                                    type="file" name="file"
+                                    ng-model="upload_data.file">
+                            </div>
+                            
+                            <button type="submit" class="btn btn-secondary" ng-click="send_data('data')">Upload</button>
+                        </form>
+                    </div>
+                </div>
+        
+            </div><!-- col-6 -->  
+
+        </div><!-- row --> 
+        
+    </div><!-- container-fluid -->
+
+    <!-- results area -->
+    <div ng-show="is_loading">Loading data from server
+        <img id="spinner" ng-src="app/spinner.gif">
+    </div>
+    <div ng-if="response" class="card m1 bg-light">
+        <div class="card-body">
+    
+            <div ng-if="time_series_data"  class="table-responsive">
+
+                <div class="table">
+                    <div class="row">
+                        <div class="col-lg-8">
+                            <h4 ng-show="name_is_queried">Time series</h4>
+                            <h4 ng-hide="name_is_queried">Names list</h4>
+                        </div>
+                        <div class="col-lg-2">
+                            <button class="btn btn-secondary" ng-click="close_response()">close</button>
+                        </div>    
+                    </div>
+                </div>
+                    
+                <table class="table table-hover table-sm table-bordered">
+                    <tr ng-repeat="x in time_series_data" track by $index>
+                        <td ng-show="name_is_queried" ng-repeat="y in x" track by $index>
+                            {{ y }} 
+                        </td> 
+                        <td ng-hide="name_is_queried">
+                            {{ x }}
+                        </td>   
+                    </tr>
+                </table>
+
+            </div>
+
+            <div ng-if="time_series_def_data" class="table-responsive">
+
+                <div class="table">
+                    <div class="row">
+                        <div class="col-lg-8">
+                            <h4 ng-hide="time_series_def_data.resp.failure">Time series definitions</h4>
+                        </div>
+                        <div class="col-lg-2">
+                            <button class="btn btn-secondary" ng-click="close_response()">close</button>
+                        </div>    
+                    </div>
+                </div>
+
+                <table class="table table-hover table-sm table-bordered">
+                    <thead class="thead-light">
+                    
+                    </thead>
+                    <tr ng-repeat="x in time_series_def_data" track by $index>
+                        <td ng-repeat="y in x" track by $index>
+                            {{ y }}
+                        </td> 
+                    </tr>
+                </table>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- result alert area -->
+    <div>
+        <div id="upload-result" class="mt-3 alert alert-info alert-dismissible collapse" role="alert">
+            <small id="upload-result-text">Beispiel</small>
+            <button type="button" class="close" ng-click="close_upload_result()">
+                <span aria-hidden="true">&times;</span>
+            </button>
+        </div>
+    </div>
+    
+</body>
+</html>
