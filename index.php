@@ -14,9 +14,10 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 include('./app/route.php');
 
 // Add base route (startpage)
-Route::add('/',function(){
-  include('./app/gui.html');
+Route::add('/',function(){		
+		include('./app/index.html');
 });
+
 
 //
 // Routes for reading data
@@ -25,21 +26,21 @@ Route::add('/',function(){
 // Time series definitions
 Route::add('/def',function(){
         include 'app/serve_time_series.php';
-        serve_time_series_definitions();
+        serve_time_series_definitions_data();
 });
 
 // time series data, all names, restricted by from, to and asof
 Route::add('/data',function(){
         include 'app/serve_time_series.php';
-        serve_time_series(null);
-});
+        serve_time_series_data(null);
+}, 'get');
 
 
 // time series data, restrict to single name, from, to and asof, name 
 Route::add('/data/([^/]{1,})',function($name){
         include 'app/serve_time_series.php';
-        serve_time_series($name);
-});
+        serve_time_series_data($name);
+}, 'get');
 
 
 //
