@@ -26,20 +26,20 @@ Route::add('/',function(){
 // Time series definitions
 Route::add('/def',function(){
         include 'app/serve_time_series.php';
-        serve_time_series_definitions_data();
+        serve_time_series_definitions();
 });
 
 // time series data, all names, restricted by from, to and asof
 Route::add('/data',function(){
         include 'app/serve_time_series.php';
-        serve_time_series_data(null);
+        serve_time_series(null);
 }, 'get');
 
 
 // time series data, restrict to single name, from, to and asof, name 
 Route::add('/data/([^/]{1,})',function($name){
         include 'app/serve_time_series.php';
-        serve_time_series_data($name);
+        serve_time_series($name);
 }, 'get');
 
 

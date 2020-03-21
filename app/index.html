@@ -34,23 +34,16 @@ main app
 -->
 <script src="./app/main.js"></script>
 
-<!--
-upload forms
--->
-<script src="./app/upload.js"></script>
-
-<!--
-authorization token
--->
-<script src="./app/authorization.js"></script>
 
 <body ng-app="seriesapp" ng-controller="main_ctrl">
+
     <nav class="navbar navbar-light bg-light justify-content-between">
 
         <a class="navbar-brand" href="#">
             <img src="./app/favicon.png" width="30" height="30" class="d-inline-block align-top" alt="">
             Risk Series
         </a>
+        <input type="text" placeholder="enter upload token" ng-model="auth.token"/>
 
     </nav>
     
@@ -83,8 +76,12 @@ authorization token
                                 <input class="form-control" name="ASOF" type="text" ng-model="queried_time_series.asof" placeholder="YYYY-MM-DDTHH:MM:SS">
                             </div>
                                 
-                            <button type="submit" class="btn btn-secondary" ng-click="downloadData()">Download</button>
-
+                            <button type="submit" class="btn btn-secondary" ng-click="showData()">Show</button>
+                            <button type="submit" class="btn btn-secondary" 
+                                    ng-click="downloadData()">
+                                Download as CSV file
+                            </button>
+                        
                         </form>
                     </div>
                 </div>
@@ -92,9 +89,10 @@ authorization token
                 <div class="card m-1 bg-light">
                     <div class="card-body">
 
-                        <h4 class="card-title">Show time series definitions</h4>
+                        <h4 class="card-title">Download time series definitions</h4>
                                 
-                        <button type="submit" class="btn btn-secondary" ng-click="downloadDefinitions()">Download</button>
+                        <button type="submit" class="btn btn-secondary" ng-click="showDefinitions()">Show</button>
+                        <button type="submit" class="btn btn-secondary" ng-click="downloadDefinitions()">Download as CSV file</button>
 
                     </div>
                 </div>
@@ -104,7 +102,6 @@ authorization token
             <div class="col-lg-6">
                 <div class="card m-1 bg-light">
                     <div class="card-body">
-                        <!-- <form id="form_def" enctype="multipart/form-data">-->
                         <form id="form_def">
                             <h4 class="card-title">Upload time series definitions</h4>
                             
@@ -119,7 +116,7 @@ authorization token
                                     ng-model="upload_def.file">
                             </div>
                             
-                            <button type="submit" class="btn btn-secondary" ng-click="send_def('def')">Upload</button>
+                            <button type="submit" class="btn btn-secondary" ng-click="sendDef('def')">Upload</button>
                         </form>
                     </div>
                 </div>
@@ -140,7 +137,7 @@ authorization token
                                     ng-model="upload_data.file">
                             </div>
                             
-                            <button type="submit" class="btn btn-secondary" ng-click="send_data('data')">Upload</button>
+                            <button type="submit" class="btn btn-secondary" ng-click="sendData('data')">Upload</button>
                         </form>
                     </div>
                 </div>
@@ -152,34 +149,36 @@ authorization token
     </div><!-- container-fluid -->
 
     <!-- results area -->
+    
+    <a id="download-series" download="" href=""></a>
+    
     <div ng-show="is_loading">Loading data from server
         <img id="spinner" ng-src="app/spinner.gif">
     </div>
-    <div ng-if="response" class="card m1 bg-light">
+    <div ng-if="response" class="card m1 bg-light" ng-hide="alert_group.alert">
         <div class="card-body">
     
             <div ng-if="time_series_data"  class="table-responsive">
 
-                <div class="table">
-                    <div class="row">
-                        <div class="col-lg-8">
-                            <h4 ng-show="name_is_queried">Time series</h4>
-                            <h4 ng-hide="name_is_queried">Names list</h4>
-                        </div>
-                        <div class="col-lg-2">
-                            <button class="btn btn-secondary" ng-click="close_response()">close</button>
-                        </div>    
+                <div class="p-3">
+                    <div>
+                        <p class="font-weight-bold" ng-show="name_is_queried">Time series</p>
+                        <p class="font-weight-bold" ng-hide="name_is_queried">Names list</p>
                     </div>
-                </div>
                     
+                    <button ng-if="data_csv" class="btn btn-outline-secondary btn-sm" ng-click="downloadCsv(file_name)" >
+                        Save as CSV file
+                    </button>
+                   
+                    <button type="button p-3" class="close" ng-click="closeResponse()">
+                        <span aria-hidden="true">&times;</span>
+                    </button>                
+                </div>
+                        
                 <table class="table table-hover table-sm table-bordered">
                     <tr ng-repeat="x in time_series_data" track by $index>
-                        <td ng-show="name_is_queried" ng-repeat="y in x" track by $index>
+                        <td ng-repeat="y in x" track by $index>
                             {{ y }} 
-                        </td> 
-                        <td ng-hide="name_is_queried">
-                            {{ x }}
-                        </td>   
                     </tr>
                 </table>
 
@@ -187,15 +186,18 @@ authorization token
 
             <div ng-if="time_series_def_data" class="table-responsive">
 
-                <div class="table">
-                    <div class="row">
-                        <div class="col-lg-8">
-                            <h4 ng-hide="time_series_def_data.resp.failure">Time series definitions</h4>
-                        </div>
-                        <div class="col-lg-2">
-                            <button class="btn btn-secondary" ng-click="close_response()">close</button>
-                        </div>    
+                <div class="p-3">
+                    <div>
+                        <p class="font-weight-bold">Time series definitions</p>
                     </div>
+                   
+                    <button ng-if="data_csv" class="btn btn-outline-secondary btn-sm" ng-click="downloadCsv(file_name)" >
+                        Save as CSV file
+                    </button>
+                    
+                    <button type="button p-3" class="close" ng-click="closeResponse()">
+                        <span aria-hidden="true">&times;</span>
+                    </button>          
                 </div>
 
                 <table class="table table-hover table-sm table-bordered">
@@ -205,7 +207,8 @@ authorization token
                     <tr ng-repeat="x in time_series_def_data" track by $index>
                         <td ng-repeat="y in x" track by $index>
                             {{ y }}
-                        </td> 
+                        </td>
+                         
                     </tr>
                 </table>
             </div>
@@ -214,10 +217,10 @@ authorization token
     </div>
 
     <!-- result alert area -->
-    <div>
-        <div id="upload-result" class="mt-3 alert alert-info alert-dismissible collapse" role="alert">
-            <small id="upload-result-text">Beispiel</small>
-            <button type="button" class="close" ng-click="close_upload_result()">
+    <div ng-if="alert_group.alert">
+        <div class="mt-3 alert alert-dismissible show" ng-class="alert_group.alert_class" role="alert">
+            <small id="upload-result-text" ng-bind="alert_group.alert_text"></small>
+            <button type="button" class="close" ng-click="closeUploadResult()">
                 <span aria-hidden="true">&times;</span>
             </button>
         </div>
