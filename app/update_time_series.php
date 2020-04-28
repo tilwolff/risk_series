@@ -10,8 +10,12 @@ The above copyright notice and this permission notice shall be included in all c
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
+// allow only authorized access 
+include('./app/auth.php');
+
 function update_time_series_definitions($ts_name){
-        //Update time series defs
+
+	//Update time series defs
 	header('Content-Type: application/json'); //return failure or success in JSON format
 	
 	//create database and table if not existing
@@ -89,10 +93,11 @@ function update_time_series_definitions($ts_name){
 	$db->exec('COMMIT;');
 	unset($db);
 	echo '{"success": "true", "num_success": ' . $success . '}';
+
 }
 
 function update_time_series($ts_name){
-        //Update time series data
+	//Update time series data
 	header('Content-Type: application/json'); //return failure or success in JSON format
 
 	//create database and table if not existing
@@ -137,12 +142,11 @@ function update_time_series($ts_name){
 		return null;
 	}
 	
-	//update only the requsted name if given in url path or GET parameter
-	if($ts_name==null && isset($_GET['name'])) $ts_name=$_GET['name'];
-	if($ts_name==null && isset($_GET['NAME'])) $ts_name=$_GET['NAME'];
+	//update only the requsted name if given in url path or POST parameter
+	if($ts_name==null && isset($_POST['name'])) $ts_name=$_POST['name'];
+	if($ts_name==null && isset($_POST['NAME'])) $ts_name=$_POST['NAME'];
 	//otherwise, retrieve name from first field in uploaded file header
 	if($ts_name==null) $ts_name=$header[0];
-
 	//now start updating
 
 	$tag=null;
@@ -176,8 +180,8 @@ function update_time_series($ts_name){
 		}
 		
 		for($i=1; $i<sizeof($header); $i++){ //handle all tags
-		        $value=retrieve_number($line[$i]);
-		        if ($value==null) continue;
+				$value=retrieve_number($line[$i]);
+				if ($value==null) continue;
 			$tag=$header[$i];
 			if($prepared->execute()){
 				$success++;
@@ -185,7 +189,7 @@ function update_time_series($ts_name){
 				//throw error, rollback and and exit
 				$db->exec('ROLLBACK;');
 				header("HTTP/1.0 400 Bad Request");
-				echo '{"success": false, "error_message": "Error: invalid data in csv."}';
+				echo '{"success": false, "error_message": "Error: invalid data in csv or invalid time series name."}';
 				exit();
 			}
 		}
@@ -196,5 +200,5 @@ function update_time_series($ts_name){
 		
 	echo '{"success": "true", "num_success": ' . $success . '}';
 
-	unset($db);      
+	unset($db);
 }

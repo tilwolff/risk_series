@@ -51,6 +51,7 @@ function serve_time_series_names(){
 	}
 }
 
+
 function get_time_series_definitions($db, $ts_name){
 	//Get relevant time series defs
 	$sql="SELECT name, tag, meta FROM ts_def";
@@ -177,7 +178,9 @@ function serve_time_series($ts_name){
 		serve_time_series_names();
 		exit();
 	}
+        header('Content-Disposition: attachment; filename=' . $ts_name . '.csv');
 	
+
 
 	if ($fromdate!= null){
 		$fromdate=(strlen((int)$fromdate) == strlen($fromdate))? 
@@ -227,11 +230,22 @@ function serve_time_series($ts_name){
 
 	//write out results	
 	header('Content-Type: text/csv');
-	echo $ts_name.";".implode(";", $tags)."\r\n";
+	echo $ts_name.";".implode(";", $tags);
 	$ndates=count($dates);
 	for ($idate=0;$idate<$ndates;$idate++){
-		echo date('Y-m-d',$dates[$idate]).";".implode(";", $results[$idate])."\r\n";
+		echo "\r\n" . date('Y-m-d',$dates[$idate]) . ";" . implode(";", $results[$idate]);
 	}
+}
+
+
+// function to transfom an array in html table row entries 
+function tr($input) {
+	$output = "";
+	$nInput = count($input);
+	for($i = 0; $i < $nInput; $i++) {
+		$output .= "<td>".$input[$i]."</td>";
+	}
+	return $output;
 }
 
 function pivot($input,$tags,$dates) {
@@ -268,18 +282,18 @@ function get_tags($db,$ts_name) {
 
 // simple array to csv conversion, without pivoting, useful for outputting  /def as csv:
 function array_to_csv($input) {
-		$keystring='';
-		foreach($input[0] as $key => $key_value) {
-			$keystring .= $key.";";
+	$keystring='';
+	foreach($input[0] as $key => $key_value) {
+		$keystring .= $key.";";
+	}
+	$output = substr($keystring,0,-1);
+	foreach($input as $row) {
+		$valuestring="\r\n";	
+		foreach($row as $key => $key_value){
+			$valuestring .= $key_value.";";
 		}
-		$output = substr($keystring,0,-1)."\r\n";
-		foreach($input as $row) {
-			$valuestring='';	
-			foreach($row as $key => $key_value){
-				$valuestring .= $key_value.";";
-			}
-			$output .= substr($valuestring,0,-1)."\r\n";
-		}	
-		return $output;							
+		$output .= substr($valuestring,0,-1);
+	}	
+	return $output;							
 }
 

@@ -62,3 +62,37 @@ USD_OIS;3Y;Raw data for USD overnight curve
 USD_OIS;5Y;Raw data for USD overnight curve
 USD_OIS;10Y;Raw data for USD overnight curve
 USD_OIS;30Y;Raw data for USD overnight curve
+EUR_OIS_DISCOUNT;1D;Discount curve based on EUR overnight index and swaps
+EUR_OIS_DISCOUNT;30D;Discount curve based on EUR overnight index and swaps
+EUR_OIS_DISCOUNT;90D;Discount curve based on EUR overnight index and swaps
+EUR_OIS_DISCOUNT;180D;Discount curve based on EUR overnight index and swaps
+EUR_OIS_DISCOUNT;1Y;Discount curve based on EUR overnight index and swaps
+EUR_OIS_DISCOUNT;2Y;Discount curve based on EUR overnight index and swaps
+EUR_OIS_DISCOUNT;5Y;Discount curve based on EUR overnight index and swaps
+EUR_OIS_DISCOUNT;10Y;Discount curve based on EUR overnight index and swaps
+EUR_OIS_DISCOUNT;20Y;Discount curve based on EUR overnight index and swaps
+EUR_OIS_DISCOUNT;30Y;Discount curve based on EUR overnight index and swaps
+EUR_1M_FWD;30D;Forward curve based on EUR 1M index and swaps
+EUR_1M_FWD;90D;Forward curve based on EUR 1M index and swaps
+EUR_1M_FWD;180D;Forward curve based on EUR 1M index and swaps
+EUR_1M_FWD;1Y;Forward curve based on EUR 1M index and swaps
+EUR_1M_FWD;2Y;Forward curve based on EUR 1M index and swaps
+EUR_1M_FWD;5Y;Forward curve based on EUR 1M index and swaps
+EUR_1M_FWD;10Y;Forward curve based on EUR 1M index and swaps
+EUR_1M_FWD;20Y;Forward curve based on EUR 1M index and swaps
+EUR_1M_FWD;30Y;Forward curve based on EUR 1M index and swaps
+EUR_3M_FWD;90D;Forward curve based on EUR 3M index and swaps
+EUR_3M_FWD;180D;Forward curve based on EUR 3M index and swaps
+EUR_3M_FWD;1Y;Forward curve based on EUR 3M index and swaps
+EUR_3M_FWD;2Y;Forward curve based on EUR 3M index and swaps
+EUR_3M_FWD;5Y;Forward curve based on EUR 3M index and swaps
+EUR_3M_FWD;10Y;Forward curve based on EUR 3M index and swaps
+EUR_3M_FWD;20Y;Forward curve based on EUR 3M index and swaps
+EUR_3M_FWD;30Y;Forward curve based on EUR 3M index and swaps
+EUR_6M_FWD;180D;Forward curve based on EUR 6M index and swaps
+EUR_6M_FWD;1Y;Forward curve based on EUR 6M index and swaps
+EUR_6M_FWD;2Y;Forward curve based on EUR 6M index and swaps
+EUR_6M_FWD;5Y;Forward curve based on EUR 6M index and swaps
+EUR_6M_FWD;10Y;Forward curve based on EUR 6M index and swaps
+EUR_6M_FWD;20Y;Forward curve based on EUR 6M index and swaps
+EUR_6M_FWD;30Y;Forward curve based on EUR 6M index and swaps
