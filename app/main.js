@@ -1,5 +1,21 @@
 var app = angular.module('seriesapp', []); 
 
+app.directive('fileModel', ['$parse', function ($parse) {
+    return {
+       restrict: 'A',
+       link: function(scope, element, attrs) {
+          var model = $parse(attrs.fileModel);
+          var modelSetter = model.assign;
+          
+          element.bind('change', function() {
+             scope.$apply(function() {
+                modelSetter(scope, element[0].files[0]);
+             });
+          });
+       }
+    };
+ }]);
+
 app.controller('main_ctrl', [ '$scope', '$http', function($scope, $http) {
 
     // authorization token
@@ -11,17 +27,17 @@ app.controller('main_ctrl', [ '$scope', '$http', function($scope, $http) {
         from: '',
         to: '',
         asof: ''
-    }
+    };
 
     $scope.upload_def = {
         fullname: '',
         file: ''
-    }
+    };
 
     $scope.upload_data = {
         fullname: '',
         file: ''
-    }
+    };
 
     $scope.is_loading = false;
     $scope.name_is_queried = false;
@@ -35,20 +51,20 @@ app.controller('main_ctrl', [ '$scope', '$http', function($scope, $http) {
         alert : false,
         alert_text : '',
         alert_class : ''
-    }
+    };
 
     // show and download 
     $scope.showData = function(){
         $scope.closeResponse();
         $scope.is_loading = true;
         return $scope.getQueriedTimeSeries($scope.queried_time_series);      
-    }
+    };
 
     $scope.downloadData = function(){
         $scope.closeResponse();
         // do query passing only_csv = true
         return $scope.getQueriedTimeSeries($scope.queried_time_series, true);  
-    }
+    };
 
     $scope.downloadCsv = function(filename) {
         var url = window.URL.createObjectURL($scope.data_csv);
@@ -56,29 +72,29 @@ app.controller('main_ctrl', [ '$scope', '$http', function($scope, $http) {
         a.download = filename;
         a.href = url;
         a.click();
-    }
+    };
 
     $scope.showDefinitions = function() {
         $scope.closeResponse();
         $scope.is_loading = true;
         return $scope.getQueriedTimeSeriesDefinitions();
-    }
+    };
 
     $scope.downloadDefinitions = function() {
         $scope.closeResponse();
         $scope.is_loading = true;
         return $scope.getQueriedTimeSeriesDefinitions(true);
-    }
+    };
 
     $scope.closeResponse = function() {
         $scope.response = false;
         $scope.time_series_def_data = null;
         $scope.time_series_data = null;
-    }
+    };
 
     $scope.closeUploadResult = function() {
         $scope.alert_group.alert = false;
-    }
+    };
 
     
     $scope.getQueriedTimeSeriesDefinitions = function(only_csv = false) {
@@ -121,7 +137,7 @@ app.controller('main_ctrl', [ '$scope', '$http', function($scope, $http) {
             $scope.alert_group.alert_class = "alert-danger";
             $scope.alert_group.alert_text = "Error: Unable to download time series definitions. Return code: " + res.status;
         });   
-    }
+    };
 
     $scope.getQueriedTimeSeries = function(query, only_csv = false) {
         var _baseUrl = '';
@@ -178,28 +194,34 @@ app.controller('main_ctrl', [ '$scope', '$http', function($scope, $http) {
             // console.log('return code: ' + res.status);
             
             // show error in the alert bar
-            $scope.alert = true;
-            $scope.alert_class = "alert-danger";
-            $scope.alert_text = "Error: Unable to download time series data. Return code: " + res.status;     
+            $scope.alert_group.alert = true;
+            $scope.alert_group.alert_class = "alert-danger";
+            $scope.alert_group.alert_text = "Error: Unable to download time series data. Return code: " + res.status;     
         });        
-    }
+    };
 
     // upload
     $scope.sendDef = function(url) {
         return $scope.sendDataForm(url, $scope.upload_def);
-    }
+    };
 
     $scope.sendData = function(url) {
         return $scope.sendDataForm(url, $scope.upload_data);
-    }
+    };
 
     $scope.sendDataForm = function(url, data) {
         var fd = new FormData();
         var form_data = data;
-		for (var key in form_data) {
-			fd.append(key, form_data[key]);
+        
+		for (var key in form_data) {    
+			fd.append(key, form_data[key]);    
         }
 
+        var config = { headers: {'Content-Type': undefined, 'Authorization': $scope.auth.token },
+            transformRequest: angular.identity
+        };
+
+        /*
         $http(
             {
                 method: 'POST',
@@ -209,9 +231,12 @@ app.controller('main_ctrl', [ '$scope', '$http', function($scope, $http) {
                     // 'Content-Type': 'application/json',
                     'Authorization': $scope.auth.token
                 }
-            }
+            } */
+            
+        $http.post(
+            url, fd, config   
         ).then(function (res, data, headers, status, config) {
-            alert("then");
+            // alert("then");
             if(res.status === 200) {
                 $scope.alert_group.alert = true;
                 $scope.alert_group.alert_class = "alert-info";
@@ -256,7 +281,7 @@ app.controller('main_ctrl', [ '$scope', '$http', function($scope, $http) {
             
         }); 
 
-    }
+    };
 
 }]);
 

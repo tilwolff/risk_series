@@ -102,7 +102,7 @@ main app
             <div class="col-lg-6">
                 <div class="card m-1 bg-light">
                     <div class="card-body">
-                        <form id="form_def">
+                        <form id="form_def" role="form" enctype="multipart/form-data">
                             <h4 class="card-title">Upload time series definitions</h4>
                             
                             <div class="form-group form-group-sm">
@@ -113,7 +113,7 @@ main app
                                 <label for="fullname">File</label>
                                 <input class="form-control-file" 
                                     type="file" name="file"
-                                    ng-model="upload_def.file">
+                                    file-model="upload_def.file">
                             </div>
                             
                             <button type="submit" class="btn btn-secondary" ng-click="sendDef('def')">Upload</button>
@@ -134,7 +134,7 @@ main app
                                 <label for="fullname">File</label>
                                 <input class="form-control-file" 
                                     type="file" name="file"
-                                    ng-model="upload_data.file">
+                                    file-model="upload_data.file">
                             </div>
                             
                             <button type="submit" class="btn btn-secondary" ng-click="sendData('data')">Upload</button>
